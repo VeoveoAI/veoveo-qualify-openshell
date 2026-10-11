@@ -1,0 +1,28 @@
+syntax = "proto3";
+package probe;
+
+message Ping {
+  uint64 seq = 1;
+  uint64 sent_ms = 2;
+}
+
+message Pong {
+  uint64 seq = 1;
+  uint64 sent_ms = 2;
+  uint64 server_ms = 3;
+}
+
+message TickRequest {
+  uint64 interval_ms = 1;
+  uint64 count = 2;
+}
+
+message Tick {
+  uint64 seq = 1;
+  uint64 server_ms = 2;
+}
+
+service Probe {
+  rpc Chat(stream Ping) returns (stream Pong);
+  rpc Ticks(TickRequest) returns (stream Tick);
+}

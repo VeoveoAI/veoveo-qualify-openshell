@@ -37,6 +37,16 @@ enum Command {
         /// Also run lifecycle scenarios that can leave an undeletable record on the gateway.
         #[arg(long)]
         lifecycle: bool,
+        /// Run the GitHub push scenario with this provider; its token must be able to write
+        /// to both repositories.
+        #[arg(long)]
+        github_provider: Option<String>,
+        /// The repository the scenario's sandbox policy allows pushing to.
+        #[arg(long, default_value = "VeoveoAI/veoveo-qualify-openshell")]
+        github_push_repository: String,
+        /// A repository the token can write to but the sandbox policy does not allow.
+        #[arg(long, default_value = "VeoveoAI/veoveo-core")]
+        github_denied_repository: String,
     },
 }
 
@@ -49,6 +59,9 @@ async fn main() -> anyhow::Result<()> {
         results_dir,
         keep,
         lifecycle,
+        github_provider,
+        github_push_repository,
+        github_denied_repository,
     } = Cli::parse().command;
 
     let started_at_ms = now_ms();
@@ -75,6 +88,11 @@ async fn main() -> anyhow::Result<()> {
         gpu,
         keep,
         lifecycle,
+        github: github_provider.map(|provider| scenarios::GitHubTarget {
+            provider,
+            push_repository: github_push_repository,
+            denied_repository: github_denied_repository,
+        }),
     };
     eprintln!(
         "running scenarios on OpenShell {} ({})",

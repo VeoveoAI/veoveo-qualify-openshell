@@ -12,6 +12,9 @@ use anyhow::Context;
 use serde_json::{Value, json};
 use std::{path::Path, time::Duration};
 
+mod git;
+pub use git::GitHubTarget;
+
 pub struct Settings {
     pub run_id: String,
     pub image: String,
@@ -22,6 +25,8 @@ pub struct Settings {
     pub keep: bool,
     /// Runs scenarios that can leave an undeletable record behind on the gateway.
     pub lifecycle: bool,
+    /// Runs the GitHub provider scenario against these repositories.
+    pub github: Option<git::GitHubTarget>,
 }
 
 const SERVER_HTTP: u16 = 8080;
@@ -168,6 +173,7 @@ async fn setup(
         expose: None,
         restart_on_failure: true,
         gpu: false,
+        providers: Vec::new(),
         command,
     };
     let sleep = || vec!["sleep".to_owned(), "infinity".to_owned()];
@@ -340,6 +346,7 @@ async fn scenarios(settings: &Settings, _workdir: &Path, context: &RunContext) -
     record("transfer", transfer(settings, context).await);
     record("dev", development(settings, context).await);
     record("gpu", vec![gpu(context).await]);
+    record("git", vec![git::provider_push(settings, context).await]);
     // Last, because a failure here can leave a sandbox record that no API can remove.
     record("lifecycle", vec![fast_failure(settings, context).await]);
     outcomes

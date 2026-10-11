@@ -19,6 +19,7 @@ pub struct SandboxSpec {
     pub expose: Option<Exposure>,
     pub restart_on_failure: bool,
     pub gpu: bool,
+    pub providers: Vec<String>,
     pub command: Vec<String>,
 }
 
@@ -110,6 +111,10 @@ pub async fn create(spec: &SandboxSpec) -> anyhow::Result<()> {
     }
     if spec.gpu {
         args.push("--gpu".into());
+    }
+    for provider in &spec.providers {
+        args.push("--provider".into());
+        args.push(provider.clone());
     }
     args.push("--".into());
     args.extend(spec.command.iter().cloned());

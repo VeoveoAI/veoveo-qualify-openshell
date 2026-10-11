@@ -29,6 +29,22 @@ cargo run --release -- run --stream-seconds 1800 --transfer-mib 4096 --cache-mib
 The run exits non-zero when a scenario fails. `--keep` leaves the sandboxes and the
 SurrealDB container in place for inspection.
 
+The GitHub push scenario needs a provider created from a token that can write to both
+of its repositories, so that only sandbox policy separates them. Import the GitHub
+example profile from the OpenShell release under test, create the provider from a token
+file, and name it in the run:
+
+```sh
+openshell profile import --url https://raw.githubusercontent.com/NVIDIA/OpenShell/v0.1.3/providers/github.yaml --global
+GITHUB_TOKEN="$(cat ~/.config/veoveo/github-environments.token)" \
+  openshell provider create --name github-veoveo --type github --credential GITHUB_TOKEN
+cargo run --release -- run --github-provider github-veoveo
+```
+
+The scenario pushes a temporary branch to this repository, is refused on `veoveo-core`
+and deletes the branch. `--github-push-repository` and `--github-denied-repository`
+select other repositories.
+
 ## Scenarios
 
 | Scenario | Rule |
@@ -52,6 +68,12 @@ SurrealDB container in place for inspection.
 | `dev.installable` | rustup adds a target, Cargo installs a crate, Git fetches from GitHub and a Cargo Git dependency builds |
 | `dev.persistence` | The workspace keeps a verified cache and Cargo output across stop, start and restart-policy replacement |
 | `gpu.device` | A GPU sandbox sees the NVIDIA device; skipped on hosts without one |
+| `git.provider_push` | With a GitHub provider attached, a sandbox pushes to the one repository its policy allows, is refused on another and holds only a placeholder for the token; skipped without `--github-provider` |
+
+Sandboxes receive the provider's token as an `openshell:resolve:` placeholder, and the
+proxy substitutes the real value only on requests to the profile's GitHub endpoints. Git
+sends the placeholder as the password of a credential helper. The provider grants fetch,
+and the sandbox policy adds push for one repository.
 
 A `limit` outcome records a documented limitation of the release. When a later release
 removes it, the outcome becomes `limit_lifted`, and the design that worked around it can

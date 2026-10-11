@@ -66,7 +66,7 @@ struct Allow {
 #[derive(Serialize)]
 struct RestMatch {
     method: &'static str,
-    path: &'static str,
+    path: String,
 }
 
 #[derive(Serialize)]
@@ -265,13 +265,13 @@ pub fn dev() -> Policy {
                     Allow {
                         allow: RestMatch {
                             method: "GET",
-                            path: "/**/info/refs*",
+                            path: "/**/info/refs*".into(),
                         },
                     },
                     Allow {
                         allow: RestMatch {
                             method: "POST",
-                            path: "/**/git-upload-pack",
+                            path: "/**/git-upload-pack".into(),
                         },
                     },
                 ],
@@ -288,6 +288,44 @@ pub fn dev() -> Policy {
     Policy {
         version: 1,
         filesystem_policy: filesystem(&["/usr/local/rustup", "/usr/local/cargo"]),
+        network_policies: rules,
+    }
+}
+
+/// Adds push to one GitHub repository. An attached GitHub provider contributes fetch
+/// and the credential.
+pub fn git_push(repository: &str) -> Policy {
+    let mut rules = BTreeMap::new();
+    rules.insert(
+        "github_push",
+        Rule {
+            endpoints: vec![Endpoint {
+                host: "github.com",
+                port: Some(443),
+                protocol: Some("rest"),
+                enforcement: Some("enforce"),
+                rules: vec![
+                    Allow {
+                        allow: RestMatch {
+                            method: "GET",
+                            path: format!("/{repository}.git/info/refs*"),
+                        },
+                    },
+                    Allow {
+                        allow: RestMatch {
+                            method: "POST",
+                            path: format!("/{repository}.git/git-receive-pack"),
+                        },
+                    },
+                ],
+                ..Default::default()
+            }],
+            binaries: binaries(&["/usr/bin/git", "/usr/lib/git-core/*"]),
+        },
+    );
+    Policy {
+        version: 1,
+        filesystem_policy: filesystem(&[]),
         network_policies: rules,
     }
 }

@@ -35,7 +35,7 @@ enum Command {
         /// Directory that receives `<openshell-version>/<os>-<arch>.json`.
         #[arg(long, default_value = "results")]
         results_dir: PathBuf,
-        /// Keep sandboxes and the PostgreSQL container for inspection.
+        /// Keep sandboxes, the PostgreSQL container and the generated policies for inspection.
         #[arg(long)]
         keep: bool,
         /// Also run lifecycle scenarios that can leave an undeletable record on the gateway.
@@ -103,7 +103,11 @@ async fn main() -> anyhow::Result<()> {
         "running scenarios on OpenShell {} ({})",
         host.openshell, host.id
     );
-    let outcomes = scenarios::run(&settings, &workdir).await?;
+    let outcomes = scenarios::run(&settings, &workdir).await;
+    if !keep {
+        let _ = std::fs::remove_dir_all(&workdir);
+    }
+    let outcomes = outcomes?;
 
     let report = Report {
         format: report::FORMAT,

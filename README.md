@@ -26,8 +26,8 @@ transfer and persistence scenarios. The endurance profile streams for 30 minutes
 cargo run --release -- run --stream-seconds 1800 --transfer-mib 4096 --cache-mib 8192
 ```
 
-The run exits non-zero when a scenario fails. `--keep` leaves the sandboxes and the
-PostgreSQL container in place for inspection.
+The run exits non-zero when a scenario fails. `--keep` leaves the sandboxes, the
+PostgreSQL container and the generated policies in place for inspection.
 
 The GitHub push scenario needs a provider created from a token that can write to both
 of its repositories, so that only sandbox policy separates them. Import the GitHub

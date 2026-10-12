@@ -1,17 +1,17 @@
 {
-  "format": "veoveo.ai/openshell-qualification/v1",
-  "harness_version": "0.1.0",
-  "started_at_ms": 1791771521644,
-  "duration_ms": 255837,
-  "stream_seconds": 15,
+  "format": "https://veoveo.ai/formats/openshell-qualification",
+  "harnessVersion": "0.1.0",
+  "startedAt": "2026-10-12T04:10:22.058Z",
+  "durationMs": 258669,
+  "streamSeconds": 15,
   "host": {
     "id": "macos-aarch64",
     "os": "macos",
     "arch": "aarch64",
-    "docker_server": "29.8.2",
-    "docker_kernel": "7.0.14-linuxkit",
+    "dockerServer": "29.8.2",
+    "dockerKernel": "7.0.14-linuxkit",
     "openshell": "0.1.3",
-    "compute_driver": "docker"
+    "computeDriver": "docker"
   },
   "outcomes": [
     {
@@ -19,31 +19,31 @@
       "rule": "exposed HTTP answers health, MCP POST and form tokens, passes one Bearer header and refuses Basic",
       "status": "pass",
       "details": {
-        "base": "http://default--qe95399-server.openshell.localhost:17670",
-        "basic_auth": {
+        "base": "http://default--vv-qual-efea-server.openshell.localhost:17670",
+        "basicAuth": {
           "body": "Invalid service request",
           "status": 400
         },
-        "bearer_auth": {
+        "bearerAuth": {
           "body": {
             "authorization": {
-              "bearer_len": 18,
-              "bearer_sha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
+              "bearerLen": 18,
+              "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
             }
           },
           "status": 200
         },
-        "body_8mib": {
-          "content_matches": true,
-          "expected_bytes": 8388608,
-          "first_mismatch": null,
-          "mib_per_s": 145.36303281797598,
-          "received_bytes": 8388608,
-          "seconds": 0.055034625,
+        "body8mib": {
+          "contentMatches": true,
+          "expectedBytes": 8388608,
+          "firstMismatch": null,
+          "mibPerS": 119.76615538395129,
+          "receivedBytes": 8388608,
+          "seconds": 0.066796834,
           "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
           "test": "big"
         },
-        "form_token": {
+        "formToken": {
           "body": {
             "authorization": "absent",
             "fields": [
@@ -57,13 +57,13 @@
           "body": "ok",
           "status": 200
         },
-        "mcp_post": {
+        "mcpPost": {
           "body": {
             "id": 1,
             "jsonrpc": "2.0",
             "result": {
               "method": "tools/list",
-              "server_ms": 1791771537520
+              "serverMs": 1791778239441
             }
           },
           "status": 200
@@ -79,16 +79,16 @@
         "echoed": 30,
         "error": null,
         "expected": 30,
-        "rtt_ms": {
+        "rttMs": {
           "count": 30,
-          "max": 7,
+          "max": 6,
           "min": 1,
           "p50": 2,
-          "p99": 7
+          "p99": 6
         },
         "test": "ws",
-        "upgrade_status": 101,
-        "url": "ws://default--qe95399-server.openshell.localhost:17670/ws"
+        "upgradeStatus": 101,
+        "url": "ws://default--vv-qual-efea-server.openshell.localhost:17670/ws"
       }
     },
     {
@@ -96,7 +96,7 @@
       "rule": "ten exposed SSE streams deliver every event without buffering",
       "status": "pass",
       "details": {
-        "complete_streams": 10,
+        "completeStreams": 10,
         "errors": [
           null,
           null,
@@ -109,24 +109,24 @@
           null,
           null
         ],
-        "expected_per_stream": 30,
-        "first_stream": {
+        "expectedPerStream": 30,
+        "firstStream": {
           "error": null,
-          "lateness_ms": {
+          "latenessMs": {
             "count": 30,
-            "max": 26,
-            "min": 1,
+            "max": 5,
+            "min": 0,
             "p50": 2,
-            "p99": 26
+            "p99": 5
           },
-          "max_gap_ms": 524,
+          "maxGapMs": 507,
           "received": 30
         },
         "streams": 10,
         "test": "sse",
-        "url": "http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=30",
-        "worst_max_gap_ms": 526,
-        "worst_p99_lateness_ms": 27
+        "url": "http://default--vv-qual-efea-server.openshell.localhost:17670/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 512,
+        "worstP99LatenessMs": 10
       }
     },
     {
@@ -136,18 +136,18 @@
       "details": {
         "error": null,
         "expected": 150,
-        "frame_bytes": 65536,
-        "lateness_ms": {
+        "frameBytes": 65536,
+        "latenessMs": {
           "count": 150,
-          "max": 19,
-          "min": 2,
+          "max": 43,
+          "min": 1,
           "p50": 3,
-          "p99": 12
+          "p99": 17
         },
-        "max_gap_ms": 116,
+        "maxGapMs": 138,
         "received": 150,
         "test": "frames",
-        "url": "http://default--qe95399-server.openshell.localhost:17670/frames?interval_ms=100&count=150&frame_bytes=65536"
+        "url": "http://default--vv-qual-efea-server.openshell.localhost:17670/frames?interval_ms=100&count=150&frame_bytes=65536"
       }
     },
     {
@@ -155,26 +155,14 @@
       "rule": "fifty simultaneous exposed SSE opens either stream completely or are refused with 502 at setup",
       "status": "pass",
       "details": {
-        "complete_streams": 43,
-        "refused": 7,
+        "completeStreams": 50,
+        "refused": 0,
         "report": {
-          "complete_streams": 43,
+          "completeStreams": 50,
           "errors": [
             null,
             null,
             null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
-            null,
-            null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
             null,
             null,
             null,
@@ -184,17 +172,29 @@
             null,
             null,
             null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
-            null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
-            null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
             null,
             null,
             null,
             null,
             null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             null,
             null,
             null,
@@ -211,24 +211,24 @@
             null,
             null
           ],
-          "expected_per_stream": 10,
-          "first_stream": {
+          "expectedPerStream": 10,
+          "firstStream": {
             "error": null,
-            "lateness_ms": {
+            "latenessMs": {
               "count": 10,
-              "max": 9,
+              "max": 4,
               "min": 1,
-              "p50": 2,
-              "p99": 9
+              "p50": 1,
+              "p99": 4
             },
-            "max_gap_ms": 506,
+            "maxGapMs": 503,
             "received": 10
           },
           "streams": 50,
           "test": "sse",
-          "url": "http://default--qe95399-server.openshell.localhost:17670/sse?interval_ms=500&count=10",
-          "worst_max_gap_ms": 507,
-          "worst_p99_lateness_ms": 43
+          "url": "http://default--vv-qual-efea-server.openshell.localhost:17670/sse?interval_ms=500&count=10",
+          "worstMaxGapMs": 515,
+          "worstP99LatenessMs": 40
         }
       }
     },
@@ -237,8 +237,8 @@
       "rule": "limit: exposure relays HTTP/1.1, so native gRPC through exposure fails",
       "status": "limit",
       "details": {
-        "chat_error": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
-        "chat_rtt_ms": {
+        "chatError": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
+        "chatRttMs": {
           "count": 0,
           "max": 0,
           "min": 0,
@@ -247,16 +247,16 @@
         },
         "expected": 6,
         "test": "grpc",
-        "ticks_error": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
-        "ticks_lateness_ms": {
+        "ticksError": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
+        "ticksLatenessMs": {
           "count": 0,
           "max": 0,
           "min": 0,
           "p50": 0,
           "p99": 0
         },
-        "ticks_max_gap_ms": 0,
-        "url": "http://default--qe95399-server--grpc.openshell.localhost:17670"
+        "ticksMaxGapMs": 0,
+        "url": "http://default--vv-qual-efea-server--grpc.openshell.localhost:17670"
       }
     },
     {
@@ -264,26 +264,26 @@
       "rule": "native gRPC through a port forward streams in both directions",
       "status": "pass",
       "details": {
-        "chat_error": null,
-        "chat_rtt_ms": {
+        "chatError": null,
+        "chatRttMs": {
           "count": 30,
           "max": 10,
-          "min": 1,
+          "min": 2,
           "p50": 4,
           "p99": 10
         },
         "expected": 30,
         "test": "grpc",
-        "ticks_error": null,
-        "ticks_lateness_ms": {
+        "ticksError": null,
+        "ticksLatenessMs": {
           "count": 30,
-          "max": 8,
-          "min": 2,
-          "p50": 4,
-          "p99": 8
+          "max": 5,
+          "min": 1,
+          "p50": 2,
+          "p99": 5
         },
-        "ticks_max_gap_ms": 505,
-        "url": "http://127.0.0.1:59139"
+        "ticksMaxGapMs": 502,
+        "url": "http://127.0.0.1:52889"
       }
     },
     {
@@ -291,35 +291,35 @@
       "rule": "a sandbox reaches an uninspected HTTP endpoint on the gateway host",
       "status": "pass",
       "details": {
-        "base": "http://host.openshell.internal:59120",
-        "basic_auth": {
+        "base": "http://host.openshell.internal:52871",
+        "basicAuth": {
           "body": {
             "authorization": {
-              "other_scheme": "Basic"
+              "otherScheme": "Basic"
             }
           },
           "status": 200
         },
-        "bearer_auth": {
+        "bearerAuth": {
           "body": {
             "authorization": {
-              "bearer_len": 18,
-              "bearer_sha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
+              "bearerLen": 18,
+              "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
             }
           },
           "status": 200
         },
-        "body_8mib": {
-          "content_matches": true,
-          "expected_bytes": 8388608,
-          "first_mismatch": null,
-          "mib_per_s": 313.6511856152039,
-          "received_bytes": 8388608,
-          "seconds": 0.025506041,
+        "body8mib": {
+          "contentMatches": true,
+          "expectedBytes": 8388608,
+          "firstMismatch": null,
+          "mibPerS": 256.83213612103214,
+          "receivedBytes": 8388608,
+          "seconds": 0.03114875,
           "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
           "test": "big"
         },
-        "form_token": {
+        "formToken": {
           "body": {
             "authorization": "absent",
             "fields": [
@@ -333,13 +333,13 @@
           "body": "ok",
           "status": 200
         },
-        "mcp_post": {
+        "mcpPost": {
           "body": {
             "id": 1,
             "jsonrpc": "2.0",
             "result": {
               "method": "tools/list",
-              "server_ms": 1791771600744
+              "serverMs": 1791778302708
             }
           },
           "status": 200
@@ -352,7 +352,7 @@
       "rule": "ten outbound SSE streams deliver every event without buffering",
       "status": "pass",
       "details": {
-        "complete_streams": 10,
+        "completeStreams": 10,
         "errors": [
           null,
           null,
@@ -365,24 +365,24 @@
           null,
           null
         ],
-        "expected_per_stream": 30,
-        "first_stream": {
+        "expectedPerStream": 30,
+        "firstStream": {
           "error": null,
-          "lateness_ms": {
+          "latenessMs": {
             "count": 30,
-            "max": 10,
+            "max": 8,
             "min": 0,
             "p50": 0,
-            "p99": 10
+            "p99": 8
           },
-          "max_gap_ms": 511,
+          "maxGapMs": 508,
           "received": 30
         },
         "streams": 10,
         "test": "sse",
-        "url": "http://host.openshell.internal:59120/sse?interval_ms=500&count=30",
-        "worst_max_gap_ms": 512,
-        "worst_p99_lateness_ms": 12
+        "url": "http://host.openshell.internal:52871/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 508,
+        "worstP99LatenessMs": 8
       }
     },
     {
@@ -392,18 +392,18 @@
       "details": {
         "error": null,
         "expected": 150,
-        "frame_bytes": 65536,
-        "lateness_ms": {
+        "frameBytes": 65536,
+        "latenessMs": {
           "count": 150,
-          "max": 13,
+          "max": 0,
           "min": 0,
-          "p50": 1,
-          "p99": 12
+          "p50": 0,
+          "p99": 0
         },
-        "max_gap_ms": 111,
+        "maxGapMs": 110,
         "received": 150,
         "test": "frames",
-        "url": "http://host.openshell.internal:59120/frames?interval_ms=100&count=150&frame_bytes=65536"
+        "url": "http://host.openshell.internal:52871/frames?interval_ms=100&count=150&frame_bytes=65536"
       }
     },
     {
@@ -414,16 +414,16 @@
         "echoed": 30,
         "error": null,
         "expected": 30,
-        "rtt_ms": {
+        "rttMs": {
           "count": 30,
-          "max": 8,
-          "min": 0,
+          "max": 13,
+          "min": 1,
           "p50": 2,
-          "p99": 8
+          "p99": 13
         },
         "test": "ws",
-        "upgrade_status": 101,
-        "url": "ws://host.openshell.internal:59120/ws"
+        "upgradeStatus": 101,
+        "url": "ws://host.openshell.internal:52871/ws"
       }
     },
     {
@@ -431,8 +431,8 @@
       "rule": "outbound native gRPC streams in both directions on an uninspected endpoint",
       "status": "pass",
       "details": {
-        "chat_error": null,
-        "chat_rtt_ms": {
+        "chatError": null,
+        "chatRttMs": {
           "count": 30,
           "max": 8,
           "min": 1,
@@ -441,16 +441,16 @@
         },
         "expected": 30,
         "test": "grpc",
-        "ticks_error": null,
-        "ticks_lateness_ms": {
+        "ticksError": null,
+        "ticksLatenessMs": {
           "count": 30,
-          "max": 6,
+          "max": 4,
           "min": 0,
           "p50": 0,
-          "p99": 6
+          "p99": 4
         },
-        "ticks_max_gap_ms": 507,
-        "url": "http://host.openshell.internal:59121"
+        "ticksMaxGapMs": 505,
+        "url": "http://host.openshell.internal:52872"
       }
     },
     {
@@ -458,26 +458,26 @@
       "rule": "outbound native gRPC streams in both directions on a tcp endpoint",
       "status": "pass",
       "details": {
-        "chat_error": null,
-        "chat_rtt_ms": {
+        "chatError": null,
+        "chatRttMs": {
           "count": 30,
-          "max": 5,
-          "min": 1,
+          "max": 14,
+          "min": 0,
           "p50": 2,
-          "p99": 5
+          "p99": 14
         },
         "expected": 30,
         "test": "grpc",
-        "ticks_error": null,
-        "ticks_lateness_ms": {
+        "ticksError": null,
+        "ticksLatenessMs": {
           "count": 30,
-          "max": 2,
+          "max": 11,
           "min": 0,
           "p50": 0,
-          "p99": 2
+          "p99": 11
         },
-        "ticks_max_gap_ms": 504,
-        "url": "http://host.openshell.internal:59124"
+        "ticksMaxGapMs": 514,
+        "url": "http://host.openshell.internal:52875"
       }
     },
     {
@@ -485,12 +485,12 @@
       "rule": "MCP 2026-07-28 inspection allows tools/list, server/discover and an allowed tool, denies a denied tool and rejects a missing Mcp-Method header",
       "status": "pass",
       "details": {
-        "allowed_tool": 200,
-        "denied_tool": 403,
-        "missing_method_header": 400,
-        "server_discover": 200,
+        "allowedTool": 200,
+        "deniedTool": 403,
+        "missingMethodHeader": 400,
+        "serverDiscover": 200,
         "test": "mcp_policy",
-        "tools_list": 200
+        "toolsList": 200
       }
     },
     {
@@ -498,9 +498,9 @@
       "rule": "limit: endpoints inspected as MCP refuse WebSocket upgrades with 403",
       "status": "limit",
       "details": {
-        "connect_error": "HTTP error: 403 Forbidden",
+        "connectError": "HTTP error: 403 Forbidden",
         "test": "ws",
-        "url": "ws://host.openshell.internal:59122/ws"
+        "url": "ws://host.openshell.internal:52873/ws"
       }
     },
     {
@@ -511,16 +511,16 @@
         "echoed": 30,
         "error": null,
         "expected": 30,
-        "rtt_ms": {
+        "rttMs": {
           "count": 30,
-          "max": 14,
+          "max": 9,
           "min": 1,
-          "p50": 3,
-          "p99": 14
+          "p50": 2,
+          "p99": 9
         },
         "test": "ws",
-        "upgrade_status": 101,
-        "url": "ws://host.openshell.internal:59123/ws"
+        "upgradeStatus": 101,
+        "url": "ws://host.openshell.internal:52874/ws"
       }
     },
     {
@@ -540,20 +540,20 @@
       "rule": "SurrealDB queries and LIVE notifications work on an uninspected endpoint",
       "status": "pass",
       "details": {
-        "address": "host.openshell.internal:59125",
+        "address": "host.openshell.internal:52876",
         "error": null,
         "expected": 30,
-        "live_latency_ms": {
+        "liveLatencyMs": {
           "count": 30,
-          "max": 12,
+          "max": 14,
           "min": 1,
           "p50": 2,
-          "p99": 12
+          "p99": 14
         },
-        "max_gap_ms": 512,
+        "maxGapMs": 511,
         "notified": 30,
         "test": "surreal",
-        "write_errors": 0
+        "writeErrors": 0
       }
     },
     {
@@ -561,20 +561,20 @@
       "rule": "SurrealDB queries and LIVE notifications work on a tcp endpoint",
       "status": "pass",
       "details": {
-        "address": "host.openshell.internal:59126",
+        "address": "host.openshell.internal:52877",
         "error": null,
         "expected": 30,
-        "live_latency_ms": {
+        "liveLatencyMs": {
           "count": 30,
-          "max": 23,
+          "max": 18,
           "min": 1,
-          "p50": 3,
-          "p99": 23
+          "p50": 2,
+          "p99": 18
         },
-        "max_gap_ms": 515,
+        "maxGapMs": 517,
         "notified": 30,
         "test": "surreal",
-        "write_errors": 0
+        "writeErrors": 0
       }
     },
     {
@@ -587,12 +587,12 @@
         ],
         "ok": true,
         "rows": 2000,
-        "seconds": 0.2,
+        "seconds": 0.22,
         "segments": [
           "probe-segment-1"
         ],
-        "url": "rerun+http://127.0.0.1:59140",
-        "version_info": "VersionInfo(version='exposed-version-unset', cloud_provider=None, cloud_region=None, features=['per_segment_index_values"
+        "url": "rerun+http://127.0.0.1:52890",
+        "versionInfo": "VersionInfo(version='exposed-version-unset', cloud_provider=None, cloud_region=None, features=['per_segment_index_values"
       }
     },
     {
@@ -600,10 +600,10 @@
       "rule": "limit: native Redap clients cannot connect through exposure",
       "status": "limit",
       "details": {
-        "error": "ConnectionError: failed to connect to server 'rerun+http://default--qe95399-redap.openshell.localhost:17670': io: failed to lookup address information: Name or service not known (Connection)\n- Server: rerun+http://default--qe95399-redap.openshell.localhost:17670",
+        "error": "ConnectionError: failed to connect to server 'rerun+http://default--vv-qual-efea-redap.openshell.localhost:17670': io: failed to lookup address information: Name or service not known (Connection)\n- Server: rerun+http://default--vv-qual-efea-redap.openshell.localhost:17670",
         "ok": false,
-        "seconds": 1.66,
-        "url": "rerun+http://default--qe95399-redap.openshell.localhost:17670"
+        "seconds": 1.76,
+        "url": "rerun+http://default--vv-qual-efea-redap.openshell.localhost:17670"
       }
     },
     {
@@ -611,9 +611,9 @@
       "rule": "Redap gRPC-Web, used by the WebViewer, answers through exposure",
       "status": "pass",
       "details": {
-        "body_bytes": 278,
-        "content_type": "application/grpc-web+proto",
-        "grpc_status_ok": true,
+        "bodyBytes": 278,
+        "contentType": "application/grpc-web+proto",
+        "grpcStatusOk": true,
         "status": 200,
         "test": "grpc_web"
       }
@@ -623,12 +623,12 @@
       "rule": "a sandbox downloads a large body from the gateway host byte-exact",
       "status": "pass",
       "details": {
-        "content_matches": true,
-        "expected_bytes": 536870912,
-        "first_mismatch": null,
-        "mib_per_s": 428.99956019752705,
-        "received_bytes": 536870912,
-        "seconds": 1.193474417,
+        "contentMatches": true,
+        "expectedBytes": 536870912,
+        "firstMismatch": null,
+        "mibPerS": 457.35383855209767,
+        "receivedBytes": 536870912,
+        "seconds": 1.119483334,
         "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
         "test": "big"
       }
@@ -638,12 +638,12 @@
       "rule": "the host downloads a large body from an exposed sandbox service byte-exact",
       "status": "pass",
       "details": {
-        "content_matches": true,
-        "expected_bytes": 536870912,
-        "first_mismatch": null,
-        "mib_per_s": 289.7287070192054,
-        "received_bytes": 536870912,
-        "seconds": 1.767170417,
+        "contentMatches": true,
+        "expectedBytes": 536870912,
+        "firstMismatch": null,
+        "mibPerS": 192.31404284619327,
+        "receivedBytes": 536870912,
+        "seconds": 2.6623120829999998,
         "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
         "test": "big"
       }
@@ -653,25 +653,25 @@
       "rule": "inside a sandbox, rustup adds a target, cargo installs a crate, Git fetches from GitHub and a Cargo Git dependency builds",
       "status": "pass",
       "details": {
-        "cargo_git_dependency": {
+        "cargoGitDependency": {
           "ok": true,
-          "output_tail": "42\n",
-          "seconds": 0.867349917
+          "outputTail": "42\n",
+          "seconds": 0.867662083
         },
-        "cargo_install": {
+        "cargoInstall": {
           "ok": true,
-          "output_tail": "/usr/local/cargo/bin/cargo-machete\n",
-          "seconds": 14.272171333
+          "outputTail": "/usr/local/cargo/bin/cargo-machete\n",
+          "seconds": 13.744238875
         },
-        "git_fetch": {
+        "gitFetch": {
           "ok": true,
-          "output_tail": "eeba0e7954c0fb4d8e9e2e29d1bfa68e290eb8b3\tHEAD\n",
-          "seconds": 0.811885625
+          "outputTail": "eeba0e7954c0fb4d8e9e2e29d1bfa68e290eb8b3\tHEAD\n",
+          "seconds": 1.243348958
         },
-        "rustup_target": {
+        "rustupTarget": {
           "ok": true,
-          "output_tail": "info: downloading component rust-std\n",
-          "seconds": 1.7485892920000001
+          "outputTail": "info: downloading component rust-std\n",
+          "seconds": 1.729002792
         }
       }
     },
@@ -680,17 +680,17 @@
       "rule": "the workspace keeps a verified cache and Cargo output across stop, start and restart-policy replacement",
       "status": "pass",
       "details": {
-        "after_restart": {
+        "afterRestart": {
           "ok": true,
-          "restart_count": 1
+          "restartCount": 1
         },
-        "after_stop_start": {
+        "afterStopStart": {
           "error": null,
           "ok": true
         },
         "prepare": {
           "ok": true,
-          "output_tail": ""
+          "outputTail": ""
         }
       }
     },
@@ -707,27 +707,27 @@
       "rule": "with a GitHub provider attached, a sandbox pushes to the one repository its policy allows, is refused on another and holds only a placeholder for the token",
       "status": "pass",
       "details": {
-        "branch": "qualify-e95399",
-        "branch_deleted": {
+        "branch": "qualify-efea",
+        "branchDeleted": {
           "ok": true,
-          "output_tail": ""
+          "outputTail": ""
         },
-        "credential_helper": {
+        "credentialHelper": {
           "ok": true,
-          "output_tail": ""
+          "outputTail": ""
         },
-        "denied_repository": "VeoveoAI/veoveo-core",
-        "placeholder_only": true,
+        "deniedRepository": "VeoveoAI/veoveo-core",
+        "placeholderOnly": true,
         "provider": "github-veoveo",
-        "push_allowed": {
+        "pushAllowed": {
           "ok": true,
-          "output_tail": "remote: \nremote: Create a pull request for 'qualify-e95399' on GitHub by visiting:        \nremote:      https://github.com/VeoveoAI/veoveo-qualify-openshell/pull/new/qualify-e95399        \nremote: \n"
+          "outputTail": "remote: \nremote: Create a pull request for 'qualify-efea' on GitHub by visiting:        \nremote:      https://github.com/VeoveoAI/veoveo-qualify-openshell/pull/new/qualify-efea        \nremote: \n"
         },
-        "push_refused": {
+        "pushRefused": {
           "ok": true,
-          "output_tail": "error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403\nsend-pack: unexpected disconnect while reading sideband packet\nfatal: the remote end hung up unexpectedly\n"
+          "outputTail": "error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403\nsend-pack: unexpected disconnect while reading sideband packet\nfatal: the remote end hung up unexpectedly\n"
         },
-        "push_repository": "VeoveoAI/veoveo-qualify-openshell"
+        "pushRepository": "VeoveoAI/veoveo-qualify-openshell"
       }
     },
     {
@@ -737,14 +737,14 @@
       "details": {
         "direct": {
           "healthz": {
-            "error": "error sending request for url (http://default--qe95399-peer.openshell.localhost:17670/healthz)"
+            "error": "error sending request for url (http://default--vv-qual-efea-peer.openshell.localhost:17670/healthz)"
           },
-          "mcp_post": {
-            "error": "error sending request for url (http://default--qe95399-peer.openshell.localhost:17670/mcp)"
+          "mcpPost": {
+            "error": "error sending request for url (http://default--vv-qual-efea-peer.openshell.localhost:17670/mcp)"
           }
         },
-        "exposure_url": "http://default--qe95399-peer.openshell.localhost:17670",
-        "gateway_listener_with_peer_authority": {
+        "exposureUrl": "http://default--vv-qual-efea-peer.openshell.localhost:17670",
+        "gatewayListenerWithPeerAuthority": {
           "status": "403"
         }
       }
@@ -754,37 +754,37 @@
       "rule": "a sandbox reaches another sandbox's service through a port forward on the gateway host, with MCP POST, bearer passthrough and SSE streams intact",
       "status": "pass",
       "details": {
-        "base": "http://host.openshell.internal:59999",
+        "base": "http://host.openshell.internal:53816",
         "http": {
-          "base": "http://host.openshell.internal:59999",
-          "basic_auth": {
+          "base": "http://host.openshell.internal:53816",
+          "basicAuth": {
             "body": {
               "authorization": {
-                "other_scheme": "Basic"
+                "otherScheme": "Basic"
               }
             },
             "status": 200
           },
-          "bearer_auth": {
+          "bearerAuth": {
             "body": {
               "authorization": {
-                "bearer_len": 18,
-                "bearer_sha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
+                "bearerLen": 18,
+                "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
               }
             },
             "status": 200
           },
-          "body_8mib": {
-            "content_matches": true,
-            "expected_bytes": 8388608,
-            "first_mismatch": null,
-            "mib_per_s": 91.73325688895258,
-            "received_bytes": 8388608,
-            "seconds": 0.087209375,
+          "body8mib": {
+            "contentMatches": true,
+            "expectedBytes": 8388608,
+            "firstMismatch": null,
+            "mibPerS": 94.70785302837594,
+            "receivedBytes": 8388608,
+            "seconds": 0.084470292,
             "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
             "test": "big"
           },
-          "form_token": {
+          "formToken": {
             "body": {
               "authorization": "absent",
               "fields": [
@@ -798,13 +798,13 @@
             "body": "ok",
             "status": 200
           },
-          "mcp_post": {
+          "mcpPost": {
             "body": {
               "id": 1,
               "jsonrpc": "2.0",
               "result": {
                 "method": "tools/list",
-                "server_ms": 1791771759421
+                "serverMs": 1791778462388
               }
             },
             "status": 200
@@ -812,30 +812,30 @@
           "test": "http"
         },
         "sse": {
-          "complete_streams": 3,
+          "completeStreams": 3,
           "errors": [
             null,
             null,
             null
           ],
-          "expected_per_stream": 30,
-          "first_stream": {
+          "expectedPerStream": 30,
+          "firstStream": {
             "error": null,
-            "lateness_ms": {
+            "latenessMs": {
               "count": 30,
-              "max": 4,
-              "min": 0,
+              "max": 11,
+              "min": 1,
               "p50": 2,
-              "p99": 4
+              "p99": 11
             },
-            "max_gap_ms": 503,
+            "maxGapMs": 508,
             "received": 30
           },
           "streams": 3,
           "test": "sse",
-          "url": "http://host.openshell.internal:59999/sse?interval_ms=500&count=30",
-          "worst_max_gap_ms": 503,
-          "worst_p99_lateness_ms": 4
+          "url": "http://host.openshell.internal:53816/sse?interval_ms=500&count=30",
+          "worstMaxGapMs": 509,
+          "worstP99LatenessMs": 11
         }
       }
     },
@@ -844,8 +844,8 @@
       "rule": "limit: inside a sandbox a closed loopback listener keeps completing TCP handshakes, while a port that never listened refuses",
       "status": "limit",
       "details": {
-        "closed_listener": "succeeded",
-        "never_listened": "ConnectionRefusedError"
+        "closedListener": "succeeded",
+        "neverListened": "ConnectionRefusedError"
       }
     },
     {
@@ -853,15 +853,15 @@
       "rule": "an endpointless provider's secret reaches only the endpoint a sandbox policy binds it to: the sandbox holds a placeholder, the bound endpoint receives the value and another allowed endpoint is refused",
       "status": "pass",
       "details": {
-        "bound_endpoint_received_secret": true,
-        "bound_response": {
+        "boundEndpointReceivedSecret": true,
+        "boundResponse": {
           "authorization": {
-            "bearer_len": 48,
-            "bearer_sha256": "0ec5a8604276e11c7e761938cebf0583640dee1093519cc323c12f5a5dca3ddd"
+            "bearerLen": 48,
+            "bearerSha256": "b669f89388103456cd61af684f2625529c9aa0756db98e1d205500a21322ceb1"
           }
         },
-        "placeholder_only": true,
-        "unbound_endpoint_response": "{\"error\":\"credential_endpoint_mismatch\",\"message\":\"Credential is not authorized for this request endpoint\"} status=403"
+        "placeholderOnly": true,
+        "unboundEndpointResponse": "{\"error\":\"credential_endpoint_mismatch\",\"message\":\"Credential is not authorized for this request endpoint\"} status=403"
       }
     },
     {

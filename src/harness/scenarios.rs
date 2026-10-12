@@ -13,6 +13,8 @@ use serde_json::{Value, json};
 use std::{path::Path, time::Duration};
 
 mod git;
+mod peer;
+mod provider;
 pub use git::GitHubTarget;
 
 pub struct Settings {
@@ -347,6 +349,11 @@ async fn scenarios(settings: &Settings, _workdir: &Path, context: &RunContext) -
     record("dev", development(settings, context).await);
     record("gpu", vec![gpu(context).await]);
     record("git", vec![git::provider_push(settings, context).await]);
+    record("peer", peer::run(settings, context).await);
+    record(
+        "provider",
+        vec![provider::bound_secret(settings, context).await],
+    );
     // Last, because a failure here can leave a sandbox record that no API can remove.
     record("lifecycle", vec![fast_failure(settings, context).await]);
     outcomes

@@ -22,3 +22,12 @@ pub fn now_ms() -> u64 {
 pub fn pattern_byte(offset: u64) -> u8 {
     (offset % 251) as u8
 }
+
+/// Lowercase hexadecimal SHA-256, used to compare secrets without reporting them.
+pub fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}

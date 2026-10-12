@@ -69,6 +69,10 @@ select other repositories.
 | `dev.persistence` | The workspace keeps a verified cache and Cargo output across stop, start and restart-policy replacement |
 | `gpu.device` | A GPU sandbox sees the NVIDIA device; skipped on hosts without one |
 | `git.provider_push` | With a GitHub provider attached, a sandbox pushes to the one repository its policy allows, is refused on another and holds only a placeholder for the token; skipped without `--github-provider` |
+| `peer.exposure` | Limit: a sandbox cannot reach another sandbox's exposed service. The exposure name `default--<sandbox>.openshell.localhost` resolves to the client's own loopback, and a request to `host.openshell.internal` must carry that authority, so the gateway listener's exposure routing is out of reach |
+| `peer.forward` | A sandbox reaches another sandbox's service through a port forward on the gateway host at `http://host.openshell.internal:<port>`, with MCP POST, bearer passthrough and SSE streams intact |
+| `sandbox.loopback_close` | Limit: inside a sandbox a closed loopback listener keeps completing TCP handshakes, while a port that never listened refuses |
+| `provider.bound_secret` | An endpointless provider's secret reaches only the endpoint a sandbox policy binds it to with `credential_binding.provider`: the sandbox holds a placeholder, the bound endpoint receives the value and another allowed endpoint is refused with `credential_endpoint_mismatch` |
 
 Sandboxes receive the provider's token as an `openshell:resolve:` placeholder, and the
 proxy substitutes the real value only on requests to the profile's GitHub endpoints. Git
@@ -86,6 +90,7 @@ be revisited.
 | `src/bin/probe.rs` | The probe that runs inside sandboxes and on the host |
 | `src/harness/` | Sandbox lifecycle, typed policies, host targets, scenarios and the report |
 | `Dockerfile`, `image/` | The probe image, a sample crate and the Rerun Catalog SDK probe |
+| `providers/` | The endpointless provider profile that `provider.bound_secret` imports and removes on each run |
 | `results/<openshell-version>/<os>-<arch>.json` | Committed reports, in the `veoveo.ai/openshell-qualification/v1` format |
 
 ## License

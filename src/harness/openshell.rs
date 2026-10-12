@@ -286,3 +286,52 @@ pub async fn policy_set(sandbox: &str, policy: &std::path::Path) -> anyhow::Resu
         .await
         .map(drop)
 }
+
+/// Imports a provider profile file into the current workspace.
+pub async fn profile_import(path: &std::path::Path) -> anyhow::Result<()> {
+    let path = path.to_string_lossy();
+    run_ok(&["profile", "lint", "-f", &path]).await?;
+    run_ok(&["profile", "import", "-f", &path]).await.map(drop)
+}
+
+pub async fn profile_delete(id: &str) {
+    let _ = run(&["profile", "delete", id]).await;
+}
+
+/// Creates a provider whose credential value travels only through the child process
+/// environment, never through arguments or output.
+pub async fn provider_create(
+    name: &str,
+    profile: &str,
+    env_key: &str,
+    value: &str,
+) -> anyhow::Result<()> {
+    let output = Command::new("openshell")
+        .args([
+            "provider",
+            "create",
+            "--name",
+            name,
+            "--type",
+            profile,
+            "--credential",
+            env_key,
+        ])
+        .env("NO_COLOR", "1")
+        .env(env_key, value)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .kill_on_drop(true)
+        .status()
+        .await
+        .context("run openshell provider create")?;
+    if !output.success() {
+        bail!("openshell provider create {name} failed");
+    }
+    Ok(())
+}
+
+pub async fn provider_delete(name: &str) {
+    let _ = run(&["provider", "delete", name]).await;
+}

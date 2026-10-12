@@ -46,7 +46,10 @@ fn authorization_kind(headers: &HeaderMap) -> Value {
         .and_then(|v| v.to_str().ok())
     {
         None => json!("absent"),
-        Some(v) if v.starts_with("Bearer ") => json!({"bearer_len": v.len() - 7}),
+        Some(v) if v.starts_with("Bearer ") => json!({
+            "bearer_len": v.len() - 7,
+            "bearer_sha256": crate::sha256_hex(&v.as_bytes()["Bearer ".len()..]),
+        }),
         Some(v) => json!({"other_scheme": v.split(' ').next().unwrap_or("")}),
     }
 }

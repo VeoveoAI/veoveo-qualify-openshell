@@ -1,7 +1,7 @@
 //! Typed OpenShell `version: 1` policies, written as JSON, which OpenShell reads as YAML.
 
 use serde::Serialize;
-use std::{collections::BTreeMap, path::Path};
+use std::{borrow::Cow, collections::BTreeMap, path::Path};
 
 pub const HOST: &str = "host.openshell.internal";
 const PROBE: &str = "/usr/local/bin/probe";
@@ -33,7 +33,7 @@ struct Binary {
 
 #[derive(Serialize, Default)]
 struct Endpoint {
-    host: &'static str,
+    host: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     port: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,6 +50,13 @@ struct Endpoint {
     rules: Vec<Allow>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     deny_rules: Vec<McpDeny>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    credential_binding: Option<CredentialBinding>,
+}
+
+#[derive(Serialize)]
+struct CredentialBinding {
+    provider: String,
 }
 
 #[derive(Serialize)]
@@ -128,7 +135,7 @@ pub fn client(ports: &HostPorts) -> Policy {
         "host_plain",
         Rule {
             endpoints: vec![Endpoint {
-                host: HOST,
+                host: HOST.into(),
                 ports: Some(vec![ports.plain_http, ports.plain_grpc]),
                 ..Default::default()
             }],
@@ -139,7 +146,7 @@ pub fn client(ports: &HostPorts) -> Policy {
         "host_mcp",
         Rule {
             endpoints: vec![Endpoint {
-                host: HOST,
+                host: HOST.into(),
                 port: Some(ports.mcp_http),
                 protocol: Some("mcp"),
                 enforcement: Some("enforce"),
@@ -160,7 +167,7 @@ pub fn client(ports: &HostPorts) -> Policy {
         "host_websocket",
         Rule {
             endpoints: vec![Endpoint {
-                host: HOST,
+                host: HOST.into(),
                 port: Some(ports.websocket_http),
                 protocol: Some("websocket"),
                 enforcement: Some("audit"),
@@ -174,7 +181,7 @@ pub fn client(ports: &HostPorts) -> Policy {
         "host_tcp",
         Rule {
             endpoints: vec![Endpoint {
-                host: HOST,
+                host: HOST.into(),
                 port: Some(ports.tcp_grpc),
                 protocol: Some("tcp"),
                 ..Default::default()
@@ -187,12 +194,12 @@ pub fn client(ports: &HostPorts) -> Policy {
         Rule {
             endpoints: vec![
                 Endpoint {
-                    host: HOST,
+                    host: HOST.into(),
                     port: Some(ports.surreal_inspected),
                     ..Default::default()
                 },
                 Endpoint {
-                    host: HOST,
+                    host: HOST.into(),
                     port: Some(ports.surreal_tcp),
                     protocol: Some("tcp"),
                     ..Default::default()
@@ -205,7 +212,7 @@ pub fn client(ports: &HostPorts) -> Policy {
         "crates_io_https",
         Rule {
             endpoints: vec![Endpoint {
-                host: "index.crates.io",
+                host: "index.crates.io".into(),
                 port: Some(443),
                 ..Default::default()
             }],
@@ -232,7 +239,7 @@ pub fn dev() -> Policy {
         "rust_toolchains",
         Rule {
             endpoints: vec![Endpoint {
-                host: "static.rust-lang.org",
+                host: "static.rust-lang.org".into(),
                 port: Some(443),
                 ..Default::default()
             }],
@@ -245,7 +252,7 @@ pub fn dev() -> Policy {
             endpoints: ["index.crates.io", "static.crates.io", "crates.io"]
                 .into_iter()
                 .map(|host| Endpoint {
-                    host,
+                    host: host.into(),
                     port: Some(443),
                     ..Default::default()
                 })
@@ -257,7 +264,7 @@ pub fn dev() -> Policy {
         "github_fetch",
         Rule {
             endpoints: vec![Endpoint {
-                host: "github.com",
+                host: "github.com".into(),
                 port: Some(443),
                 protocol: Some("rest"),
                 enforcement: Some("enforce"),
@@ -300,7 +307,7 @@ pub fn git_push(repository: &str) -> Policy {
         "github_push",
         Rule {
             endpoints: vec![Endpoint {
-                host: "github.com",
+                host: "github.com".into(),
                 port: Some(443),
                 protocol: Some("rest"),
                 enforcement: Some("enforce"),
@@ -321,6 +328,71 @@ pub fn git_push(repository: &str) -> Policy {
                 ..Default::default()
             }],
             binaries: binaries(&["/usr/bin/git", "/usr/lib/git-core/*"]),
+        },
+    );
+    Policy {
+        version: 1,
+        filesystem_policy: filesystem(&[]),
+        network_policies: rules,
+    }
+}
+
+/// A client that tries to reach a peer sandbox through its exposure URL, through the
+/// gateway listener with the peer's authority, and through a port forward.
+pub fn peer_client(exposure_host: &str, gateway_port: u16, forward_port: u16) -> Policy {
+    let mut rules = BTreeMap::new();
+    rules.insert(
+        "peer",
+        Rule {
+            endpoints: vec![
+                Endpoint {
+                    host: exposure_host.to_owned().into(),
+                    port: Some(gateway_port),
+                    ..Default::default()
+                },
+                Endpoint {
+                    host: HOST.into(),
+                    ports: Some(vec![gateway_port, forward_port]),
+                    ..Default::default()
+                },
+            ],
+            binaries: binaries(&[PROBE, "/usr/bin/curl"]),
+        },
+    );
+    Policy {
+        version: 1,
+        filesystem_policy: filesystem(&[]),
+        network_policies: rules,
+    }
+}
+
+/// Binds an endpointless provider to one inspected host endpoint and allows a second
+/// inspected endpoint that the provider is not bound to.
+pub fn bound_secret(provider: &str, bound_port: u16, other_port: u16) -> Policy {
+    let inspected = |port, binding: Option<&str>| Endpoint {
+        host: HOST.into(),
+        port: Some(port),
+        protocol: Some("rest"),
+        enforcement: Some("enforce"),
+        access: Some("full"),
+        credential_binding: binding.map(|provider| CredentialBinding {
+            provider: provider.to_owned(),
+        }),
+        ..Default::default()
+    };
+    let mut rules = BTreeMap::new();
+    rules.insert(
+        "bound",
+        Rule {
+            endpoints: vec![inspected(bound_port, Some(provider))],
+            binaries: binaries(&["/usr/bin/curl"]),
+        },
+    );
+    rules.insert(
+        "unbound",
+        Rule {
+            endpoints: vec![inspected(other_port, None)],
+            binaries: binaries(&["/usr/bin/curl"]),
         },
     );
     Policy {

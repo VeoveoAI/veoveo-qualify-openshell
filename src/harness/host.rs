@@ -6,6 +6,7 @@ use std::{net::SocketAddr, process::Stdio, time::Duration};
 use tokio::{process::Command, task::JoinHandle};
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct HostInfo {
     pub id: String,
     pub os: String,
@@ -64,8 +65,15 @@ pub fn spawn_server(http_port: u16, grpc_port: u16) -> JoinHandle<anyhow::Result
 
 pub async fn build_probe_image(tag: &str) -> anyhow::Result<()> {
     let root = env!("CARGO_MANIFEST_DIR");
+    let revision = command_stdout("git", &["-C", root, "rev-parse", "HEAD"]).await?;
     let status = Command::new("docker")
-        .args(["build", "-q", "-t", tag, root])
+        .args(["build", "-q", "-t", tag])
+        .args([
+            "--build-arg",
+            &format!("VERSION={}", env!("CARGO_PKG_VERSION")),
+        ])
+        .args(["--build-arg", &format!("REVISION={revision}")])
+        .arg(root)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .status()

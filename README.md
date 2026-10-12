@@ -37,8 +37,8 @@ file, and name it in the run:
 ```sh
 openshell profile import --url https://raw.githubusercontent.com/NVIDIA/OpenShell/v0.1.3/providers/github.yaml --global
 GITHUB_TOKEN="$(cat ~/.config/veoveo/github-environments.token)" \
-  openshell provider create --name github-veoveo --type github --credential GITHUB_TOKEN
-cargo run --release -- run --github-provider github-veoveo
+  openshell provider create --name vv-github --type github --credential GITHUB_TOKEN
+cargo run --release -- run --github-provider vv-github
 ```
 
 The scenario pushes a temporary branch to this repository, is refused on `veoveo-core`
@@ -91,7 +91,7 @@ be revisited.
 | `src/harness/` | Sandbox lifecycle, typed policies, host targets, scenarios and the report |
 | `Dockerfile`, `image/` | The probe image, a sample crate and the Rerun Catalog SDK probe |
 | `providers/` | The endpointless provider profile that `provider.bound_secret` imports and removes on each run |
-| `results/<openshell-version>/<os>-<arch>.json` | Committed reports, in the `veoveo.ai/openshell-qualification/v1` format |
+| `results/<openshell-version>/<os>-<arch>.json` | Committed reports in the `https://veoveo.ai/formats/openshell-qualification` format |
 
 ## License
 

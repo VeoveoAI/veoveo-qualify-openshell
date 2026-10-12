@@ -50,7 +50,7 @@ fn text(value: &Value, pointer: &str) -> String {
 fn streamed_cleanly(report: &Value, interval_ms: u64) -> bool {
     num(report, "/received") == num(report, "/expected")
         && report.get("error").is_none_or(Value::is_null)
-        && num(report, "/max_gap_ms").is_some_and(|gap| gap <= interval_ms + 500)
+        && num(report, "/maxGapMs").is_some_and(|gap| gap <= interval_ms + 500)
 }
 
 /// Bounds a probe so a stalled stream fails its scenario instead of hanging the run.
@@ -115,7 +115,7 @@ pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outc
         host::spawn_server(ports.websocket_http, host::free_port()?),
         host::spawn_server(host::free_port()?, ports.tcp_grpc),
     ];
-    let surreal_container = format!("q{}-surreal", settings.run_id);
+    let surreal_container = format!("vv-qual-{}-surreal", settings.run_id);
     let surreal = Surreal::start(
         &surreal_container,
         ports.surreal_inspected,
@@ -123,7 +123,7 @@ pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outc
     )
     .await?;
 
-    let prefix = format!("q{}", settings.run_id);
+    let prefix = format!("vv-qual-{}", settings.run_id);
     let sandboxes = Sandboxes {
         server: format!("{prefix}-server"),
         client: format!("{prefix}-client"),
@@ -207,10 +207,10 @@ async fn setup(
     let mut client = spec(&sandboxes.client, &client_policy, sleep());
     client
         .env
-        .push(("PROBE_SURREAL_USER".into(), "root".into()));
+        .push(("VEOVEO_SURREAL_USERNAME".into(), "root".into()));
     client
         .env
-        .push(("PROBE_SURREAL_PASS".into(), surreal.password.clone()));
+        .push(("VEOVEO_SURREAL_PASSWORD".into(), surreal.password.clone()));
     openshell::create(&client)
         .await
         .context("create client sandbox")?;
@@ -373,15 +373,15 @@ async fn exposure(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
                 HTTP_RULE,
                 [
                     "/healthz/status",
-                    "/mcp_post/status",
-                    "/form_token/status",
-                    "/bearer_auth/status",
+                    "/mcpPost/status",
+                    "/formToken/status",
+                    "/bearerAuth/status",
                 ]
                 .iter()
                 .all(|p| num(&r, p) == Some(200))
-                    && num(&r, "/bearer_auth/body/authorization/bearer_len") == Some(18)
-                    && num(&r, "/basic_auth/status") == Some(400)
-                    && r.pointer("/body_8mib/content_matches") == Some(&json!(true)),
+                    && num(&r, "/bearerAuth/body/authorization/bearerLen") == Some(18)
+                    && num(&r, "/basicAuth/status") == Some(400)
+                    && r.pointer("/body8mib/contentMatches") == Some(&json!(true)),
                 r,
             ),
             Err(e) => Outcome::error("exposure.http", HTTP_RULE, e),
@@ -398,7 +398,7 @@ async fn exposure(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "exposure.websocket",
                 WS_RULE,
-                num(&r, "/upgrade_status") == Some(101)
+                num(&r, "/upgradeStatus") == Some(101)
                     && num(&r, "/echoed") == num(&r, "/expected"),
                 r,
             ),
@@ -412,8 +412,8 @@ async fn exposure(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "exposure.sse",
                 SSE_RULE,
-                num(&r, "/complete_streams") == Some(10)
-                    && num(&r, "/worst_max_gap_ms").is_some_and(|g| g <= STREAM_INTERVAL_MS + 500),
+                num(&r, "/completeStreams") == Some(10)
+                    && num(&r, "/worstMaxGapMs").is_some_and(|g| g <= STREAM_INTERVAL_MS + 500),
                 r,
             ),
             Err(e) => Outcome::error("exposure.sse", SSE_RULE, e),
@@ -437,7 +437,7 @@ async fn exposure(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
                 "exposure.burst",
                 BURST_RULE,
                 errors.iter().all(|e| e.contains("502")),
-                json!({"complete_streams": r["complete_streams"], "refused": errors.len(), "report": r}),
+                json!({"completeStreams": r["completeStreams"], "refused": errors.len(), "report": r}),
             )
         }
         Err(e) => Outcome::error("exposure.burst", BURST_RULE, e),
@@ -453,7 +453,7 @@ async fn exposure(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
         .await
         {
             Ok(r) => {
-                let failed = !r["chat_error"].is_null() || num(&r, "/chat_rtt_ms/count") == Some(0);
+                let failed = !r["chatError"].is_null() || num(&r, "/chatRttMs/count") == Some(0);
                 Outcome::limit("exposure.grpc_native", NATIVE_GRPC_RULE, failed, r)
             }
             Err(e) => Outcome::limit(
@@ -477,9 +477,9 @@ async fn exposure(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "forward.grpc",
                 FORWARD_RULE,
-                r["chat_error"].is_null()
-                    && r["ticks_error"].is_null()
-                    && num(&r, "/chat_rtt_ms/count") == num(&r, "/expected"),
+                r["chatError"].is_null()
+                    && r["ticksError"].is_null()
+                    && num(&r, "/chatRttMs/count") == num(&r, "/expected"),
                 r,
             ),
             Err(e) => Outcome::error("forward.grpc", FORWARD_RULE, e),
@@ -511,14 +511,14 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             HTTP_RULE,
             [
                 "/healthz/status",
-                "/mcp_post/status",
-                "/form_token/status",
-                "/bearer_auth/status",
-                "/basic_auth/status",
+                "/mcpPost/status",
+                "/formToken/status",
+                "/bearerAuth/status",
+                "/basicAuth/status",
             ]
             .iter()
             .all(|p| num(&r, p) == Some(200))
-                && r.pointer("/body_8mib/content_matches") == Some(&json!(true)),
+                && r.pointer("/body8mib/contentMatches") == Some(&json!(true)),
             r,
         ),
         Err(e) => Outcome::error("outbound.http", HTTP_RULE, e),
@@ -542,8 +542,8 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "outbound.sse",
                 SSE_RULE,
-                num(&r, "/complete_streams") == Some(10)
-                    && num(&r, "/worst_max_gap_ms").is_some_and(|g| g <= STREAM_INTERVAL_MS + 500),
+                num(&r, "/completeStreams") == Some(10)
+                    && num(&r, "/worstMaxGapMs").is_some_and(|g| g <= STREAM_INTERVAL_MS + 500),
                 r,
             ),
             Err(e) => Outcome::error("outbound.sse", SSE_RULE, e),
@@ -585,7 +585,7 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "outbound.websocket",
                 WS_RULE,
-                num(&r, "/upgrade_status") == Some(101)
+                num(&r, "/upgradeStatus") == Some(101)
                     && num(&r, "/echoed") == num(&r, "/expected"),
                 r,
             ),
@@ -598,9 +598,9 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 id,
                 rule,
-                r["chat_error"].is_null()
-                    && r["ticks_error"].is_null()
-                    && num(&r, "/chat_rtt_ms/count") == num(&r, "/expected"),
+                r["chatError"].is_null()
+                    && r["ticksError"].is_null()
+                    && num(&r, "/chatRttMs/count") == num(&r, "/expected"),
                 r,
             ),
             Err(e) => Outcome::error(id, rule, e),
@@ -651,11 +651,11 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "outbound.mcp_policy",
                 MCP_RULE,
-                num(&r, "/tools_list") == Some(200)
-                    && num(&r, "/server_discover") == Some(200)
-                    && num(&r, "/allowed_tool") == Some(200)
-                    && num(&r, "/denied_tool") == Some(403)
-                    && num(&r, "/missing_method_header") == Some(400),
+                num(&r, "/toolsList") == Some(200)
+                    && num(&r, "/serverDiscover") == Some(200)
+                    && num(&r, "/allowedTool") == Some(200)
+                    && num(&r, "/deniedTool") == Some(403)
+                    && num(&r, "/missingMethodHeader") == Some(400),
                 r,
             ),
             Err(e) => Outcome::error("outbound.mcp_policy", MCP_RULE, e),
@@ -680,7 +680,7 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::limit(
                 "outbound.mcp_upgrade",
                 MCP_UPGRADE_RULE,
-                text(&r, "/connect_error").contains("403"),
+                text(&r, "/connectError").contains("403"),
                 r,
             ),
             Err(e) => Outcome::error("outbound.mcp_upgrade", MCP_UPGRADE_RULE, e),
@@ -704,7 +704,7 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "outbound.websocket_inspected",
                 WS_ENDPOINT_RULE,
-                num(&r, "/upgrade_status") == Some(101)
+                num(&r, "/upgradeStatus") == Some(101)
                     && num(&r, "/echoed") == num(&r, "/expected"),
                 r,
             ),
@@ -760,7 +760,7 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
                     id,
                     rule,
                     num(&r, "/notified") == num(&r, "/expected")
-                        && num(&r, "/write_errors") == Some(0)
+                        && num(&r, "/writeErrors") == Some(0)
                         && r["error"].is_null(),
                     r,
                 ),
@@ -814,7 +814,7 @@ async fn redap(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "redap.grpc_web",
                 GRPC_WEB_RULE,
-                num(&r, "/status") == Some(200) && r["grpc_status_ok"] == json!(true),
+                num(&r, "/status") == Some(200) && r["grpcStatusOk"] == json!(true),
                 r,
             ),
             Err(e) => Outcome::error("redap.grpc_web", GRPC_WEB_RULE, e),
@@ -840,7 +840,7 @@ async fn transfer(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "transfer.outbound",
                 OUT_RULE,
-                r["content_matches"] == json!(true),
+                r["contentMatches"] == json!(true),
                 r,
             ),
             Err(e) => Outcome::error("transfer.outbound", OUT_RULE, e),
@@ -853,7 +853,7 @@ async fn transfer(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             Ok(r) => Outcome::check(
                 "transfer.inbound",
                 IN_RULE,
-                r["content_matches"] == json!(true),
+                r["contentMatches"] == json!(true),
                 r,
             ),
             Err(e) => Outcome::error("transfer.inbound", IN_RULE, e),
@@ -885,17 +885,17 @@ async fn development(settings: &Settings, context: &RunContext) -> Vec<Outcome> 
 
     const INSTALL_RULE: &str = "inside a sandbox, rustup adds a target, cargo installs a crate, Git fetches from GitHub and a Cargo Git dependency builds";
     let steps = [
-        ("rustup_target", "rustup target add wasm32-unknown-unknown"),
+        ("rustupTarget", "rustup target add wasm32-unknown-unknown"),
         (
-            "cargo_install",
+            "cargoInstall",
             "cargo install -q --locked cargo-machete && command -v cargo-machete",
         ),
         (
-            "git_fetch",
+            "gitFetch",
             "git ls-remote https://github.com/NVIDIA/OpenShell HEAD",
         ),
         (
-            "cargo_git_dependency",
+            "cargoGitDependency",
             "rm -rf /sandbox/gitdep && mkdir -p /sandbox/gitdep/src && cd /sandbox/gitdep \
              && printf '[package]\\nname = \"gitdep\"\\nversion = \"0.0.0\"\\nedition = \"2024\"\\n[dependencies]\\nitoa = { git = \"https://github.com/dtolnay/itoa\", tag = \"1.0.15\" }\\n' > Cargo.toml \
              && printf 'fn main() { println!(\"{}\", itoa::Buffer::new().format(42)); }\\n' > src/main.rs && cargo run -q",
@@ -909,7 +909,7 @@ async fn development(settings: &Settings, context: &RunContext) -> Vec<Outcome> 
         all_ok &= ok;
         details.insert(
             name.into(),
-            json!({"ok": ok, "seconds": started.elapsed().as_secs_f64(), "output_tail": output}),
+            json!({"ok": ok, "seconds": started.elapsed().as_secs_f64(), "outputTail": output}),
         );
     }
     outcomes.push(Outcome::check(
@@ -930,7 +930,7 @@ async fn development(settings: &Settings, context: &RunContext) -> Vec<Outcome> 
     let (prepared, output) = shell(dev, &prepare).await;
     details.insert(
         "prepare".into(),
-        json!({"ok": prepared, "output_tail": output}),
+        json!({"ok": prepared, "outputTail": output}),
     );
     let stop_start = async {
         openshell::stop(dev).await?;
@@ -938,7 +938,7 @@ async fn development(settings: &Settings, context: &RunContext) -> Vec<Outcome> 
     }
     .await;
     let (after_start, _) = shell(dev, verify).await;
-    details.insert("after_stop_start".into(), json!({"ok": stop_start.is_ok() && after_start, "error": stop_start.err().map(|e| format!("{e:#}"))}));
+    details.insert("afterStopStart".into(), json!({"ok": stop_start.is_ok() && after_start, "error": stop_start.err().map(|e| format!("{e:#}"))}));
     let _ = shell(dev, "pkill -KILL -x sleep").await;
     tokio::time::sleep(Duration::from_secs(5)).await;
     let ready = openshell::wait_ready(dev, Duration::from_secs(180)).await;
@@ -948,8 +948,8 @@ async fn development(settings: &Settings, context: &RunContext) -> Vec<Outcome> 
         .and_then(|v| v.get("restart_count").and_then(Value::as_u64));
     let (after_restart, _) = shell(dev, verify).await;
     details.insert(
-        "after_restart".into(),
-        json!({"ok": ready.is_ok() && after_restart, "restart_count": restarts}),
+        "afterRestart".into(),
+        json!({"ok": ready.is_ok() && after_restart, "restartCount": restarts}),
     );
     outcomes.push(Outcome::check(
         "dev.persistence",
@@ -991,7 +991,7 @@ async fn fast_failure(settings: &Settings, context: &RunContext) -> Outcome {
             "run with --lifecycle; on OpenShell 0.1.3 this scenario can leave a record that no API deletes",
         );
     }
-    let name = format!("q{}-crash", settings.run_id);
+    let name = format!("vv-qual-{}-crash", settings.run_id);
     let policy = context.policies.join("server.yaml");
     if let Err(error) = openshell::submit(&name, &settings.image, &policy, &["false"]).await {
         return Outcome::error("lifecycle.fast_failure", RULE, error);
@@ -1025,13 +1025,13 @@ async fn fast_failure(settings: &Settings, context: &RunContext) -> Outcome {
         RULE,
         progressed && deleted,
         json!({
-            "phase_after_45s": phase,
-            "restart_count": restarts,
+            "phaseAfter45s": phase,
+            "restartCount": restarts,
             "condition": condition,
-            "driver_operation_pending": pending,
-            "deleted_within_90s": deleted,
-            "delete_response": delete_message,
-            "cleanup_if_stuck": "if the record stays, remove its containers with docker rm -f and reset the gateway database; no OpenShell 0.1.3 API resolves a lost driver operation",
+            "driverOperationPending": pending,
+            "deletedWithin90s": deleted,
+            "deleteResponse": delete_message,
+            "cleanupIfStuck": "if the record stays, remove its containers with docker rm -f and reset the gateway database; no OpenShell 0.1.3 API resolves a lost driver operation",
         }),
     )
 }

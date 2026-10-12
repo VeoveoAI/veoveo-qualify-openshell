@@ -4,7 +4,11 @@ use anyhow::Context;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use veoveo_qualify_openshell::{
-    harness::{host, openshell, report::Report, scenarios},
+    harness::{
+        host, openshell,
+        report::{self, Report},
+        scenarios,
+    },
     now_ms,
 };
 
@@ -72,8 +76,9 @@ async fn main() -> anyhow::Result<()> {
     let host = host::info(openshell_version, compute_driver).await?;
     let gpu = cfg!(target_os = "linux") && std::path::Path::new("/dev/nvidiactl").exists();
 
-    let run_id = format!("{:x}", started_at_ms % 0xFFFFFF);
-    let image = "veoveo-qualify-openshell-probe:local".to_owned();
+    // Four hex digits keep `vv-qual-<run>-<role>` within OpenShell's 19-character limit.
+    let run_id = format!("{:04x}", started_at_ms % 0x10000);
+    let image = "veoveo-qualify-openshell:dev".to_owned();
     eprintln!("building {image}");
     host::build_probe_image(&image).await?;
 
@@ -101,9 +106,9 @@ async fn main() -> anyhow::Result<()> {
     let outcomes = scenarios::run(&settings, &workdir).await?;
 
     let report = Report {
-        format: "veoveo.ai/openshell-qualification/v1",
+        format: report::FORMAT,
         harness_version: env!("CARGO_PKG_VERSION"),
-        started_at_ms,
+        started_at: rfc3339(started_at_ms),
         duration_ms: now_ms() - started_at_ms,
         stream_seconds,
         host,
@@ -116,4 +121,12 @@ async fn main() -> anyhow::Result<()> {
         std::process::exit(1);
     }
     Ok(())
+}
+
+fn rfc3339(epoch_ms: u64) -> String {
+    i64::try_from(epoch_ms)
+        .ok()
+        .and_then(chrono::DateTime::from_timestamp_millis)
+        .map(|time| time.to_rfc3339_opts(chrono::SecondsFormat::Millis, true))
+        .unwrap_or_default()
 }

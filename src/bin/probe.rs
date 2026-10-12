@@ -77,10 +77,10 @@ enum Command {
     Surreal {
         #[arg(long)]
         address: String,
-        #[arg(long, env = "PROBE_SURREAL_USER")]
-        user: String,
-        #[arg(long, env = "PROBE_SURREAL_PASS")]
-        pass: String,
+        #[arg(long, env = "VEOVEO_SURREAL_USERNAME")]
+        username: String,
+        #[arg(long, env = "VEOVEO_SURREAL_PASSWORD")]
+        password: String,
         #[arg(long, default_value_t = 60)]
         seconds: u64,
         #[arg(long, default_value_t = 1000)]
@@ -142,11 +142,11 @@ async fn main() -> anyhow::Result<()> {
         } => grpc::client(&url, seconds, interval_ms).await?,
         Command::Surreal {
             address,
-            user,
-            pass,
+            username,
+            password,
             seconds,
             interval_ms,
-        } => surreal::run(&address, user, pass, seconds, interval_ms).await?,
+        } => surreal::run(&address, username, password, seconds, interval_ms).await?,
         Command::McpPolicy {
             base,
             allowed_tool,

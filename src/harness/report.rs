@@ -73,11 +73,16 @@ impl Outcome {
     }
 }
 
+/// Identifies the report format; the format's JSON Schema uses the same URI as its `$id`.
+pub const FORMAT: &str = "https://veoveo.ai/formats/openshell-qualification";
+
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Report {
     pub format: &'static str,
     pub harness_version: &'static str,
-    pub started_at_ms: u64,
+    /// RFC 3339 start time of the run.
+    pub started_at: String,
     pub duration_ms: u64,
     pub stream_seconds: u64,
     pub host: HostInfo,

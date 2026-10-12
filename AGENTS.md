@@ -17,5 +17,8 @@ the README before changing a scenario.
   release at its source.
 - Run the suite on macOS and on Linux before committing a change to scenarios, the probe
   image or policies, and commit the resulting reports under `results/`.
+- Names, identifiers and formats follow the
+  [naming and format conventions](https://github.com/VeoveoAI/veoveo-core/blob/main/docs/CONVENTIONS.md).
+  Throwaway sandboxes are named `vv-qual-<run>-<role>` within 19 characters.
 - Commit small, coherent changes. Commits carry no AI or tool attribution.
 - Keep OpenShell telemetry disabled on every gateway that runs this suite.

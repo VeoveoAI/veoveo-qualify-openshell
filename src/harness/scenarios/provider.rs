@@ -17,11 +17,11 @@ use std::io::Read;
 
 const ID: &str = "provider.bound_secret";
 const RULE: &str = "an endpointless provider's secret reaches only the endpoint a sandbox policy binds it to: the sandbox holds a placeholder, the bound endpoint receives the value and another allowed endpoint is refused";
-const PROFILE_ID: &str = "veoveo-qualify-bound-secret";
-const ENV_KEY: &str = "QUALIFY_BOUND_SECRET";
+const PROFILE_ID: &str = "vv-qual-bound-secret";
+const ENV_KEY: &str = "VEOVEO_QUALIFY_BOUND_SECRET";
 
 pub async fn bound_secret(settings: &Settings, context: &RunContext) -> Outcome {
-    let name = format!("q{}-bound", settings.run_id);
+    let name = format!("vv-qual-{}-bound", settings.run_id);
     let bound_port = host::free_port();
     let other_port = host::free_port();
     let (Ok(bound_port), Ok(other_port)) = (bound_port, other_port) else {
@@ -61,7 +61,7 @@ async fn run(
     other_port: u16,
 ) -> anyhow::Result<Outcome> {
     let profile = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("providers/veoveo-qualify-bound-secret.yaml");
+        .join("providers/vv-qual-bound-secret.yaml");
     openshell::profile_delete(PROFILE_ID).await;
     openshell::profile_import(&profile).await?;
     let secret = fresh_secret()?;
@@ -103,7 +103,7 @@ echo "other=$(curl -s -m 10 -w ' status=%{{http_code}}' -H "Authorization: Beare
     let placeholder = field("placeholder") == "true";
     let bound: Value = serde_json::from_str(&field("bound")).unwrap_or(Value::Null);
     let received = bound
-        .pointer("/authorization/bearer_sha256")
+        .pointer("/authorization/bearerSha256")
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_owned();
@@ -115,10 +115,10 @@ echo "other=$(curl -s -m 10 -w ' status=%{{http_code}}' -H "Authorization: Beare
         RULE,
         ok && placeholder && delivered && refused,
         json!({
-            "placeholder_only": placeholder,
-            "bound_endpoint_received_secret": delivered,
-            "bound_response": bound,
-            "unbound_endpoint_response": other,
+            "placeholderOnly": placeholder,
+            "boundEndpointReceivedSecret": delivered,
+            "boundResponse": bound,
+            "unboundEndpointResponse": other,
         }),
     ))
 }

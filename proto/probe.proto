@@ -1,5 +1,5 @@
 syntax = "proto3";
-package probe;
+package veoveo.qualify.openshell;
 
 message Ping {
   uint64 seq = 1;

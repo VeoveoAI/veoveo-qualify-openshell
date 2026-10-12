@@ -42,11 +42,11 @@ pub async fn http(base: &str, bearer: &str) -> anyhow::Result<Value> {
         "test": "http",
         "base": base,
         "healthz": outcome(health).await,
-        "mcp_post": outcome(mcp).await,
-        "form_token": outcome(token).await,
-        "bearer_auth": outcome(bearer_auth).await,
-        "basic_auth": outcome(basic_auth).await,
-        "body_8mib": big.unwrap_or_else(|e| json!({"error": e.to_string()})),
+        "mcpPost": outcome(mcp).await,
+        "formToken": outcome(token).await,
+        "bearerAuth": outcome(bearer_auth).await,
+        "basicAuth": outcome(basic_auth).await,
+        "body8mib": big.unwrap_or_else(|e| json!({"error": e.to_string()})),
     }))
 }
 
@@ -89,12 +89,12 @@ pub async fn big(base: &str, bytes: u64) -> anyhow::Result<Value> {
     let secs = started.elapsed().as_secs_f64();
     Ok(json!({
         "test": "big",
-        "expected_bytes": bytes,
-        "received_bytes": received,
-        "content_matches": mismatch_at.is_none() && received == bytes,
-        "first_mismatch": mismatch_at,
+        "expectedBytes": bytes,
+        "receivedBytes": received,
+        "contentMatches": mismatch_at.is_none() && received == bytes,
+        "firstMismatch": mismatch_at,
         "seconds": secs,
-        "mib_per_s": received as f64 / 1048576.0 / secs,
+        "mibPerS": received as f64 / 1048576.0 / secs,
         "sha256": digest.finalize().iter().map(|b| format!("{b:02x}")).collect::<String>(),
     }))
 }
@@ -122,21 +122,21 @@ pub async fn sse(
         .count();
     let worst_gap = results
         .iter()
-        .filter_map(|r| r.get("max_gap_ms").and_then(Value::as_u64))
+        .filter_map(|r| r.get("maxGapMs").and_then(Value::as_u64))
         .max();
     let worst_p99 = results
         .iter()
-        .filter_map(|r| r.pointer("/lateness_ms/p99").and_then(Value::as_u64))
+        .filter_map(|r| r.pointer("/latenessMs/p99").and_then(Value::as_u64))
         .max();
     Ok(json!({
         "test": "sse",
         "url": url,
         "streams": streams,
-        "expected_per_stream": count,
-        "complete_streams": complete,
-        "worst_max_gap_ms": worst_gap,
-        "worst_p99_lateness_ms": worst_p99,
-        "first_stream": results.first(),
+        "expectedPerStream": count,
+        "completeStreams": complete,
+        "worstMaxGapMs": worst_gap,
+        "worstP99LatenessMs": worst_p99,
+        "firstStream": results.first(),
         "errors": results.iter().filter_map(|r| r.get("error")).collect::<Vec<_>>(),
     }))
 }
@@ -165,7 +165,7 @@ async fn one_sse(url: &str) -> Value {
             let event: String = buffer.drain(..end + 2).collect();
             if let Some(data) = event.lines().find_map(|l| l.strip_prefix("data:"))
                 && let Ok(value) = serde_json::from_str::<Value>(data.trim())
-                && let Some(server_ms) = value.get("server_ms").and_then(Value::as_u64)
+                && let Some(server_ms) = value.get("serverMs").and_then(Value::as_u64)
             {
                 let now = now_ms();
                 arrivals.push(now);
@@ -175,8 +175,8 @@ async fn one_sse(url: &str) -> Value {
     }
     json!({
         "received": arrivals.len(),
-        "lateness_ms": stats::summarize(lateness),
-        "max_gap_ms": stats::max_gap(&arrivals),
+        "latenessMs": stats::summarize(lateness),
+        "maxGapMs": stats::max_gap(&arrivals),
         "error": error,
     })
 }
@@ -219,9 +219,9 @@ pub async fn frames(
         "url": url,
         "expected": count,
         "received": arrivals.len(),
-        "frame_bytes": frame_bytes,
-        "lateness_ms": stats::summarize(lateness),
-        "max_gap_ms": stats::max_gap(&arrivals),
+        "frameBytes": frame_bytes,
+        "latenessMs": stats::summarize(lateness),
+        "maxGapMs": stats::max_gap(&arrivals),
         "error": error,
     }))
 }
@@ -230,7 +230,7 @@ pub async fn ws(url: &str, seconds: u64, interval_ms: u64) -> anyhow::Result<Val
     let (socket, response) = match tokio_tungstenite::connect_async(url).await {
         Ok(connected) => connected,
         Err(error) => {
-            return Ok(json!({"test": "ws", "url": url, "connect_error": error.to_string()}));
+            return Ok(json!({"test": "ws", "url": url, "connectError": error.to_string()}));
         }
     };
     let upgrade_status = response.status().as_u16();
@@ -241,14 +241,14 @@ pub async fn ws(url: &str, seconds: u64, interval_ms: u64) -> anyhow::Result<Val
     while (rtts.len() as u64) < count {
         tokio::select! {
             _ = interval.tick(), if sent < count => {
-                let text = json!({"seq": sent, "sent_ms": now_ms()}).to_string();
+                let text = json!({"seq": sent, "sentMs": now_ms()}).to_string();
                 if let Err(e) = sink.send(Message::Text(text.into())).await { error = Some(e.to_string()); break; }
                 sent += 1;
             }
             message = source.next() => match message {
                 Some(Ok(Message::Text(text))) => {
                     if let Ok(value) = serde_json::from_str::<Value>(&text)
-                        && let Some(sent_ms) = value.get("sent_ms").and_then(Value::as_u64)
+                        && let Some(sent_ms) = value.get("sentMs").and_then(Value::as_u64)
                     {
                         rtts.push(now_ms().saturating_sub(sent_ms));
                     }
@@ -262,10 +262,10 @@ pub async fn ws(url: &str, seconds: u64, interval_ms: u64) -> anyhow::Result<Val
     Ok(json!({
         "test": "ws",
         "url": url,
-        "upgrade_status": upgrade_status,
+        "upgradeStatus": upgrade_status,
         "expected": count,
         "echoed": rtts.len(),
-        "rtt_ms": stats::summarize(rtts),
+        "rttMs": stats::summarize(rtts),
         "error": error,
     }))
 }

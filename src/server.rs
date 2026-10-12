@@ -47,10 +47,10 @@ fn authorization_kind(headers: &HeaderMap) -> Value {
     {
         None => json!("absent"),
         Some(v) if v.starts_with("Bearer ") => json!({
-            "bearer_len": v.len() - 7,
-            "bearer_sha256": crate::sha256_hex(&v.as_bytes()["Bearer ".len()..]),
+            "bearerLen": v.len() - 7,
+            "bearerSha256": crate::sha256_hex(&v.as_bytes()["Bearer ".len()..]),
         }),
-        Some(v) => json!({"other_scheme": v.split(' ').next().unwrap_or("")}),
+        Some(v) => json!({"otherScheme": v.split(' ').next().unwrap_or("")}),
     }
 }
 
@@ -58,7 +58,7 @@ async fn mcp(Json(request): Json<Value>) -> Json<Value> {
     Json(json!({
         "jsonrpc": "2.0",
         "id": request.get("id").cloned().unwrap_or(Value::Null),
-        "result": {"method": request.get("method"), "server_ms": now_ms()},
+        "result": {"method": request.get("method"), "serverMs": now_ms()},
     }))
 }
 
@@ -119,7 +119,7 @@ async fn sse(
     Query(query): Query<StreamQuery>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let events = ticks(query.interval_ms, query.count).map(|seq| {
-        Ok(Event::default().data(json!({"seq": seq, "server_ms": now_ms()}).to_string()))
+        Ok(Event::default().data(json!({"seq": seq, "serverMs": now_ms()}).to_string()))
     });
     Sse::new(events).keep_alive(KeepAlive::default())
 }
@@ -150,7 +150,7 @@ async fn echo(mut socket: WebSocket) {
         let reply = match message {
             Message::Text(text) => {
                 let mut value: Value = serde_json::from_str(&text).unwrap_or(json!({}));
-                value["server_ms"] = json!(now_ms());
+                value["serverMs"] = json!(now_ms());
                 Message::Text(value.to_string().into())
             }
             Message::Ping(payload) => Message::Pong(payload),

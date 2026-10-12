@@ -24,5 +24,10 @@ COPY --from=build /probe /usr/local/bin/probe
 COPY image /usr/local/share/probe
 USER sandbox
 RUN /usr/local/rerun/bin/rerun analytics disable >/dev/null
-LABEL org.opencontainers.image.source="https://github.com/VeoveoAI/veoveo-qualify-openshell" \
+ARG VERSION
+ARG REVISION
+LABEL org.opencontainers.image.title="veoveo-qualify-openshell" \
+      org.opencontainers.image.source="https://github.com/VeoveoAI/veoveo-qualify-openshell" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
       org.opencontainers.image.licenses="Apache-2.0"

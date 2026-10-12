@@ -7,7 +7,7 @@ report = {"url": url}
 started = time.time()
 try:
     client = rr.catalog.CatalogClient(url)
-    report["version_info"] = str(client.version_info())[:120]
+    report["versionInfo"] = str(client.version_info())[:120]
     report["datasets"] = client.dataset_names()
     dataset = client.get_dataset(name=report["datasets"][0])
     segments = dataset.segment_ids() if hasattr(dataset, "segment_ids") else None

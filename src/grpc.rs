@@ -5,7 +5,7 @@ use std::{net::SocketAddr, pin::Pin, time::Duration};
 use tonic::{Request, Response, Status, Streaming};
 
 pub mod pb {
-    tonic::include_proto!("probe");
+    tonic::include_proto!("veoveo.qualify.openshell");
 }
 use pb::{
     Ping, Pong, Tick, TickRequest,
@@ -116,11 +116,11 @@ pub async fn client(url: &str, seconds: u64, interval_ms: u64) -> anyhow::Result
         "test": "grpc",
         "url": url,
         "expected": count,
-        "chat_rtt_ms": stats::summarize(rtts),
-        "chat_error": chat_error,
-        "ticks_lateness_ms": stats::summarize(tick_lateness),
-        "ticks_max_gap_ms": stats::max_gap(&tick_arrivals),
-        "ticks_error": tick_error,
+        "chatRttMs": stats::summarize(rtts),
+        "chatError": chat_error,
+        "ticksLatenessMs": stats::summarize(tick_lateness),
+        "ticksMaxGapMs": stats::max_gap(&tick_arrivals),
+        "ticksError": tick_error,
     }))
 }
 

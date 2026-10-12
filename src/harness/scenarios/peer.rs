@@ -19,8 +19,8 @@ const LOOPBACK_ID: &str = "sandbox.loopback_close";
 const LOOPBACK_RULE: &str = "limit: inside a sandbox a closed loopback listener keeps completing TCP handshakes, while a port that never listened refuses";
 
 pub async fn run(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
-    let server = format!("q{}-peer", settings.run_id);
-    let client = format!("q{}-peerc", settings.run_id);
+    let server = format!("vv-qual-{}-peer", settings.run_id);
+    let client = format!("vv-qual-{}-peerc", settings.run_id);
     let outcomes = match scenarios(settings, context, &server, &client).await {
         Ok(outcomes) => outcomes,
         Err(error) => {
@@ -145,9 +145,9 @@ async fn exposure(
         EXPOSURE_RULE,
         !(reached_directly || override_status == "200"),
         json!({
-            "exposure_url": exposure_url,
-            "direct": {"healthz": direct.get("healthz"), "mcp_post": direct.get("mcp_post")},
-            "gateway_listener_with_peer_authority": {"status": override_status},
+            "exposureUrl": exposure_url,
+            "direct": {"healthz": direct.get("healthz"), "mcpPost": direct.get("mcpPost")},
+            "gatewayListenerWithPeerAuthority": {"status": override_status},
         }),
     )
 }
@@ -185,12 +185,12 @@ async fn forward(settings: &Settings, client: &str, port: u16) -> Outcome {
             return Outcome::error(FORWARD_ID, FORWARD_RULE, error);
         }
     };
-    let http_ok = ["/healthz/status", "/mcp_post/status", "/bearer_auth/status"]
+    let http_ok = ["/healthz/status", "/mcpPost/status", "/bearerAuth/status"]
         .iter()
         .all(|pointer| num(&http, pointer) == Some(200))
-        && http.pointer("/body_8mib/content_matches") == Some(&json!(true));
-    let sse_ok = num(&sse, "/complete_streams") == Some(3)
-        && num(&sse, "/worst_max_gap_ms").is_some_and(|gap| gap <= 1000);
+        && http.pointer("/body8mib/contentMatches") == Some(&json!(true));
+    let sse_ok = num(&sse, "/completeStreams") == Some(3)
+        && num(&sse, "/worstMaxGapMs").is_some_and(|gap| gap <= 1000);
     Outcome::check(
         FORWARD_ID,
         FORWARD_RULE,
@@ -223,7 +223,7 @@ never = socket.socket()
 never.bind(("127.0.0.1", 0))
 never_port = never.getsockname()[1]
 never.close()
-print(json.dumps({"closed_listener": connect(used_port), "never_listened": connect(never_port)}))
+print(json.dumps({"closedListener": connect(used_port), "neverListened": connect(never_port)}))
 PY"#;
 
 async fn loopback(client: &str) -> Outcome {
@@ -232,8 +232,8 @@ async fn loopback(client: &str) -> Outcome {
         .lines()
         .rev()
         .find_map(|line| serde_json::from_str(line).ok())
-        .unwrap_or_else(|| json!({"output_tail": output}));
-    if !ok || report.get("closed_listener").is_none() {
+        .unwrap_or_else(|| json!({"outputTail": output}));
+    if !ok || report.get("closedListener").is_none() {
         return Outcome::error(
             LOOPBACK_ID,
             LOOPBACK_RULE,
@@ -243,7 +243,7 @@ async fn loopback(client: &str) -> Outcome {
     Outcome::limit(
         LOOPBACK_ID,
         LOOPBACK_RULE,
-        report["closed_listener"] == "succeeded",
+        report["closedListener"] == "succeeded",
         report,
     )
 }

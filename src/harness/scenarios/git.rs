@@ -41,7 +41,7 @@ pub async fn provider_push(settings: &Settings, context: &RunContext) -> Outcome
             "run with --github-provider <name>, a provider whose token can write to both repositories",
         );
     };
-    let name = format!("q{}-git", settings.run_id);
+    let name = format!("vv-qual-{}-git", settings.run_id);
     let policy_path = context.policies.join("git.yaml");
     if let Err(error) = policy::write(&policy::git_push(&target.push_repository), &policy_path) {
         return Outcome::error(ID, RULE, error);
@@ -79,21 +79,21 @@ pub async fn provider_push(settings: &Settings, context: &RunContext) -> Outcome
     }
 
     let refused = !other_pushed && other_output.contains("403");
-    let step = |ok: bool, output: String| json!({"ok": ok, "output_tail": output});
+    let step = |ok: bool, output: String| json!({"ok": ok, "outputTail": output});
     Outcome::check(
         ID,
         RULE,
         placeholder && helper && pushed && refused && cleaned,
         json!({
             "provider": target.provider,
-            "push_repository": target.push_repository,
-            "denied_repository": target.denied_repository,
+            "pushRepository": target.push_repository,
+            "deniedRepository": target.denied_repository,
             "branch": branch,
-            "placeholder_only": placeholder,
-            "credential_helper": step(helper, helper_output),
-            "push_allowed": step(pushed, push_output),
-            "push_refused": step(refused, other_output),
-            "branch_deleted": step(cleaned, cleanup_output),
+            "placeholderOnly": placeholder,
+            "credentialHelper": step(helper, helper_output),
+            "pushAllowed": step(pushed, push_output),
+            "pushRefused": step(refused, other_output),
+            "branchDeleted": step(cleaned, cleanup_output),
         }),
     )
 }

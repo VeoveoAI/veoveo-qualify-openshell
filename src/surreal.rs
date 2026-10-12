@@ -15,17 +15,13 @@ struct Row {
 
 pub async fn run(
     address: &str,
-    user: String,
-    pass: String,
+    username: String,
+    password: String,
     seconds: u64,
     interval_ms: u64,
 ) -> anyhow::Result<Value> {
     let db = Surreal::new::<Ws>(address.to_owned()).await?;
-    db.signin(Root {
-        username: user,
-        password: pass,
-    })
-    .await?;
+    db.signin(Root { username, password }).await?;
     db.use_ns("probe").use_db("probe").await?;
     let run_id = now_ms();
     let table = format!("probe_{run_id}");
@@ -85,9 +81,9 @@ pub async fn run(
         "address": address,
         "expected": count,
         "notified": latency.len(),
-        "write_errors": write_errors,
-        "live_latency_ms": stats::summarize(latency),
-        "max_gap_ms": stats::max_gap(&arrivals),
+        "writeErrors": write_errors,
+        "liveLatencyMs": stats::summarize(latency),
+        "maxGapMs": stats::max_gap(&arrivals),
         "error": error,
     }))
 }

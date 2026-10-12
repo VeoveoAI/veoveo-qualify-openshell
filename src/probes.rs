@@ -56,11 +56,11 @@ pub async fn mcp_policy(
         .json(&mcp_body("tools/list", None));
     Ok(json!({
         "test": "mcp_policy",
-        "tools_list": status(call("tools/list", None)).await,
-        "server_discover": status(call("server/discover", None)).await,
-        "allowed_tool": status(call("tools/call", Some(allowed_tool))).await,
-        "denied_tool": status(call("tools/call", Some(denied_tool))).await,
-        "missing_method_header": status(missing_method_header).await,
+        "toolsList": status(call("tools/list", None)).await,
+        "serverDiscover": status(call("server/discover", None)).await,
+        "allowedTool": status(call("tools/call", Some(allowed_tool))).await,
+        "deniedTool": status(call("tools/call", Some(denied_tool))).await,
+        "missingMethodHeader": status(missing_method_header).await,
     }))
 }
 
@@ -97,7 +97,7 @@ pub async fn grpc_web(base: &str, method_path: &str) -> anyhow::Result<Value> {
                 .to_owned();
             let body = response.bytes().await.unwrap_or_default();
             let trailer_ok = String::from_utf8_lossy(&body).contains("grpc-status:0");
-            json!({"test": "grpc_web", "status": status, "content_type": content_type, "grpc_status_ok": trailer_ok, "body_bytes": body.len()})
+            json!({"test": "grpc_web", "status": status, "contentType": content_type, "grpcStatusOk": trailer_ok, "bodyBytes": body.len()})
         }
         Err(error) => json!({"test": "grpc_web", "error": error.to_string()}),
     })

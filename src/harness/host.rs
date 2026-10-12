@@ -1,8 +1,8 @@
-//! Host-side targets: probe servers, the SurrealDB container, the probe image and host facts.
+//! Host-side targets: probe servers, the PostgreSQL container, the probe image and host facts.
 
 use anyhow::{Context, bail};
 use serde::Serialize;
-use std::{net::SocketAddr, process::Stdio, time::Duration};
+use std::{io::Read, net::SocketAddr, process::Stdio, time::Duration};
 use tokio::{process::Command, task::JoinHandle};
 
 #[derive(Serialize)]
@@ -85,62 +85,109 @@ pub async fn build_probe_image(tag: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub struct Surreal {
+/// Random lowercase hexadecimal from the operating system, for throwaway secrets.
+pub fn fresh_secret() -> anyhow::Result<String> {
+    let mut bytes = [0u8; 24];
+    std::fs::File::open("/dev/urandom")?.read_exact(&mut bytes)?;
+    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
+}
+
+/// The official PostgreSQL 18.6 image.
+const POSTGRES_IMAGE: &str =
+    "postgres:18.6-trixie@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336";
+
+pub struct Postgres {
     pub container: String,
     pub password: String,
 }
 
-impl Surreal {
-    /// Starts SurrealDB 3.3.0 in memory, published on two host ports that the policy
-    /// treats as an uninspected endpoint and a native TCP endpoint.
+impl Postgres {
+    pub const USER: &str = "probe";
+    pub const DATABASE: &str = "probe";
+
+    /// Starts PostgreSQL 18.6 on a tmpfs data directory, published on two host ports that
+    /// the policy treats as an endpoint without a protocol and as a `tcp` endpoint, and
+    /// waits until it accepts connections. A container that never becomes ready is removed.
     pub async fn start(
         container: &str,
         inspected_port: u16,
         tcp_port: u16,
     ) -> anyhow::Result<Self> {
-        let password = format!("q{:x}{:x}", crate::now_ms(), std::process::id());
-        let publish_a = format!("0.0.0.0:{inspected_port}:8000");
-        let publish_b = format!("0.0.0.0:{tcp_port}:8000");
-        command_stdout(
-            "docker",
-            &[
-                "run",
-                "-d",
-                "--name",
-                container,
-                "-p",
-                &publish_a,
-                "-p",
-                &publish_b,
-                "surrealdb/surrealdb:v3.3.0",
-                "start",
-                "--user",
-                "root",
-                "--pass",
-                &password,
-                "memory",
-            ],
-        )
-        .await?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-        while tokio::net::TcpStream::connect(("127.0.0.1", inspected_port))
-            .await
-            .is_err()
-        {
-            if tokio::time::Instant::now() >= deadline {
-                bail!("SurrealDB did not listen within 60 seconds");
-            }
-            tokio::time::sleep(Duration::from_millis(250)).await;
-        }
-        tokio::time::sleep(Duration::from_secs(2)).await;
-        Ok(Self {
+        let postgres = Self {
             container: container.to_owned(),
-            password,
-        })
+            password: fresh_secret()?,
+        };
+        let publish_a = format!("0.0.0.0:{inspected_port}:5432");
+        let publish_b = format!("0.0.0.0:{tcp_port}:5432");
+        let user = format!("POSTGRES_USER={}", Self::USER);
+        let database = format!("POSTGRES_DB={}", Self::DATABASE);
+        // `-e POSTGRES_PASSWORD` without a value copies it from the client's environment,
+        // which keeps the password out of process arguments.
+        let output = Command::new("docker")
+            .args(["run", "-d", "--name", container])
+            .args(["--tmpfs", "/var/lib/postgresql"])
+            .args(["-e", &user, "-e", &database, "-e", "POSTGRES_PASSWORD"])
+            .args(["-p", &publish_a, "-p", &publish_b, POSTGRES_IMAGE])
+            .env("POSTGRES_PASSWORD", &postgres.password)
+            .stdin(Stdio::null())
+            .output()
+            .await
+            .context("run docker run")?;
+        if !output.status.success() {
+            postgres.stop().await;
+            bail!(
+                "docker run of {POSTGRES_IMAGE} failed: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            );
+        }
+        if let Err(error) = postgres.wait_ready(Duration::from_secs(60)).await {
+            let logs = Command::new("docker")
+                .args(["logs", "--tail", "20", container])
+                .stdin(Stdio::null())
+                .output()
+                .await
+                .map(|o| String::from_utf8_lossy(&o.stderr).trim().to_owned())
+                .unwrap_or_default();
+            postgres.stop().await;
+            return Err(error.context(format!("PostgreSQL log tail: {logs}")));
+        }
+        Ok(postgres)
+    }
+
+    /// Waits until `pg_isready` inside the container reaches the server over TCP. The
+    /// image's initialization server listens only on a socket, so only the final server
+    /// answers.
+    async fn wait_ready(&self, timeout: Duration) -> anyhow::Result<()> {
+        let deadline = tokio::time::Instant::now() + timeout;
+        loop {
+            let ready = Command::new("docker")
+                .args([
+                    "exec",
+                    &self.container,
+                    "pg_isready",
+                    "-q",
+                    "-h",
+                    "127.0.0.1",
+                ])
+                .args(["-p", "5432", "-U", Self::USER, "-d", Self::DATABASE])
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .await
+                .is_ok_and(|status| status.success());
+            if ready {
+                return Ok(());
+            }
+            if tokio::time::Instant::now() >= deadline {
+                bail!("PostgreSQL did not accept connections within {timeout:?}");
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
     }
 
     pub async fn stop(&self) {
-        let _ = command_stdout("docker", &["rm", "-f", &self.container]).await;
+        let _ = command_stdout("docker", &["rm", "-f", "-v", &self.container]).await;
     }
 }
 

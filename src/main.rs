@@ -35,7 +35,7 @@ enum Command {
         /// Directory that receives `<openshell-version>/<os>-<arch>.json`.
         #[arg(long, default_value = "results")]
         results_dir: PathBuf,
-        /// Keep sandboxes and the SurrealDB container for inspection.
+        /// Keep sandboxes and the PostgreSQL container for inspection.
         #[arg(long)]
         keep: bool,
         /// Also run lifecycle scenarios that can leave an undeletable record on the gateway.

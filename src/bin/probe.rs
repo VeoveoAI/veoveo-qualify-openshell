@@ -1,7 +1,7 @@
 //! Transport probe that runs inside OpenShell sandboxes and on the host.
 
 use clap::{Parser, Subcommand};
-use veoveo_qualify_openshell::{client, grpc, probes, server, surreal};
+use veoveo_qualify_openshell::{client, grpc, postgres, probes, server};
 
 #[derive(Parser)]
 #[command(name = "probe")]
@@ -73,13 +73,13 @@ enum Command {
         #[arg(long, default_value_t = 1000)]
         interval_ms: u64,
     },
-    /// Write rows and follow them through a SurrealDB LIVE query.
-    Surreal {
-        #[arg(long)]
-        address: String,
-        #[arg(long, env = "VEOVEO_SURREAL_USERNAME")]
-        username: String,
-        #[arg(long, env = "VEOVEO_SURREAL_PASSWORD")]
+    /// Run PostgreSQL queries, hold a session advisory lock and follow writes through
+    /// LISTEN/NOTIFY.
+    Postgres {
+        /// A `postgres://` URL without a password.
+        #[arg(long, env = "VEOVEO_DATABASE_URL")]
+        url: String,
+        #[arg(long, env = "VEOVEO_DATABASE_PASSWORD", hide_env_values = true)]
         password: String,
         #[arg(long, default_value_t = 60)]
         seconds: u64,
@@ -140,13 +140,12 @@ async fn main() -> anyhow::Result<()> {
             seconds,
             interval_ms,
         } => grpc::client(&url, seconds, interval_ms).await?,
-        Command::Surreal {
-            address,
-            username,
+        Command::Postgres {
+            url,
             password,
             seconds,
             interval_ms,
-        } => surreal::run(&address, username, password, seconds, interval_ms).await?,
+        } => postgres::run(&url, &password, seconds, interval_ms).await?,
         Command::McpPolicy {
             base,
             allowed_tool,

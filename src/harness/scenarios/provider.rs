@@ -13,7 +13,6 @@ use crate::{
 };
 use anyhow::{Context, anyhow};
 use serde_json::{Value, json};
-use std::io::Read;
 
 const ID: &str = "provider.bound_secret";
 const RULE: &str = "an endpointless provider's secret reaches only the endpoint a sandbox policy binds it to: the sandbox holds a placeholder, the bound endpoint receives the value and another allowed endpoint is refused";
@@ -47,12 +46,6 @@ pub async fn bound_secret(settings: &Settings, context: &RunContext) -> Outcome 
     outcome
 }
 
-fn fresh_secret() -> anyhow::Result<String> {
-    let mut bytes = [0u8; 24];
-    std::fs::File::open("/dev/urandom")?.read_exact(&mut bytes)?;
-    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
-}
-
 async fn run(
     settings: &Settings,
     context: &RunContext,
@@ -64,7 +57,7 @@ async fn run(
         .join("providers/vv-qual-bound-secret.yaml");
     openshell::profile_delete(PROFILE_ID).await;
     openshell::profile_import(&profile).await?;
-    let secret = fresh_secret()?;
+    let secret = host::fresh_secret()?;
     openshell::provider_create(name, PROFILE_ID, ENV_KEY, &secret).await?;
 
     let policy_path = context.policies.join("bound.yaml");

@@ -27,7 +27,7 @@ cargo run --release -- run --stream-seconds 1800 --transfer-mib 4096 --cache-mib
 ```
 
 The run exits non-zero when a scenario fails. `--keep` leaves the sandboxes and the
-SurrealDB container in place for inspection.
+PostgreSQL container in place for inspection.
 
 The GitHub push scenario needs a provider created from a token that can write to both
 of its repositories, so that only sandbox policy separates them. Import the GitHub
@@ -60,7 +60,7 @@ select other repositories.
 | `outbound.mcp_upgrade` | Limit: endpoints inspected as MCP refuse WebSocket upgrades |
 | `outbound.websocket_inspected` | An endpoint inspected as `websocket` upgrades and echoes |
 | `outbound.https_rustls` | A rustls HTTPS client trusts the TLS-inspecting proxy |
-| `surreal.inspected`, `surreal.tcp` | SurrealDB 3.3.0 queries and LIVE notifications work from a sandbox |
+| `postgres.inspected`, `postgres.tcp` | A sandbox reaches PostgreSQL 18.6 through an endpoint without a protocol, which OpenShell inspects, and through a `tcp` endpoint. Queries answer, a session advisory lock holds for the whole stream and `LISTEN`/`NOTIFY` delivers every write in order |
 | `redap.forward` | The Rerun 0.38.1 Catalog SDK lists and reads a dataset through a port forward |
 | `redap.native_exposure` | Limit: native Redap clients cannot connect through exposure |
 | `redap.grpc_web` | Redap gRPC-Web, used by the Rerun WebViewer, answers through exposure |

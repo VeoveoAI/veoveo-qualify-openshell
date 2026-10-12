@@ -1,8 +1,8 @@
 {
   "format": "https://veoveo.ai/formats/openshell-qualification",
   "harnessVersion": "0.1.0",
-  "startedAt": "2026-10-12T04:10:22.058Z",
-  "durationMs": 258669,
+  "startedAt": "2026-10-12T21:52:32.614Z",
+  "durationMs": 269164,
   "streamSeconds": 15,
   "host": {
     "id": "macos-aarch64",
@@ -19,7 +19,7 @@
       "rule": "exposed HTTP answers health, MCP POST and form tokens, passes one Bearer header and refuses Basic",
       "status": "pass",
       "details": {
-        "base": "http://default--vv-qual-efea-server.openshell.localhost:17670",
+        "base": "http://default--vv-qual-6366-server.openshell.localhost:17670",
         "basicAuth": {
           "body": "Invalid service request",
           "status": 400
@@ -37,9 +37,9 @@
           "contentMatches": true,
           "expectedBytes": 8388608,
           "firstMismatch": null,
-          "mibPerS": 119.76615538395129,
+          "mibPerS": 129.0619214900199,
           "receivedBytes": 8388608,
-          "seconds": 0.066796834,
+          "seconds": 0.06198575,
           "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
           "test": "big"
         },
@@ -63,7 +63,7 @@
             "jsonrpc": "2.0",
             "result": {
               "method": "tools/list",
-              "serverMs": 1791778239441
+              "serverMs": 1791841980378
             }
           },
           "status": 200
@@ -81,14 +81,14 @@
         "expected": 30,
         "rttMs": {
           "count": 30,
-          "max": 6,
+          "max": 9,
           "min": 1,
           "p50": 2,
-          "p99": 6
+          "p99": 9
         },
         "test": "ws",
         "upgradeStatus": 101,
-        "url": "ws://default--vv-qual-efea-server.openshell.localhost:17670/ws"
+        "url": "ws://default--vv-qual-6366-server.openshell.localhost:17670/ws"
       }
     },
     {
@@ -114,19 +114,19 @@
           "error": null,
           "latenessMs": {
             "count": 30,
-            "max": 5,
-            "min": 0,
+            "max": 6,
+            "min": 1,
             "p50": 2,
-            "p99": 5
+            "p99": 6
           },
-          "maxGapMs": 507,
+          "maxGapMs": 505,
           "received": 30
         },
         "streams": 10,
         "test": "sse",
-        "url": "http://default--vv-qual-efea-server.openshell.localhost:17670/sse?interval_ms=500&count=30",
-        "worstMaxGapMs": 512,
-        "worstP99LatenessMs": 10
+        "url": "http://default--vv-qual-6366-server.openshell.localhost:17670/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 509,
+        "worstP99LatenessMs": 42
       }
     },
     {
@@ -139,15 +139,15 @@
         "frameBytes": 65536,
         "latenessMs": {
           "count": 150,
-          "max": 43,
-          "min": 1,
-          "p50": 3,
-          "p99": 17
+          "max": 13,
+          "min": 2,
+          "p50": 4,
+          "p99": 12
         },
-        "maxGapMs": 138,
+        "maxGapMs": 113,
         "received": 150,
         "test": "frames",
-        "url": "http://default--vv-qual-efea-server.openshell.localhost:17670/frames?interval_ms=100&count=150&frame_bytes=65536"
+        "url": "http://default--vv-qual-6366-server.openshell.localhost:17670/frames?interval_ms=100&count=150&frame_bytes=65536"
       }
     },
     {
@@ -216,19 +216,19 @@
             "error": null,
             "latenessMs": {
               "count": 10,
-              "max": 4,
-              "min": 1,
-              "p50": 1,
-              "p99": 4
+              "max": 16,
+              "min": 2,
+              "p50": 2,
+              "p99": 16
             },
-            "maxGapMs": 503,
+            "maxGapMs": 514,
             "received": 10
           },
           "streams": 50,
           "test": "sse",
-          "url": "http://default--vv-qual-efea-server.openshell.localhost:17670/sse?interval_ms=500&count=10",
-          "worstMaxGapMs": 515,
-          "worstP99LatenessMs": 40
+          "url": "http://default--vv-qual-6366-server.openshell.localhost:17670/sse?interval_ms=500&count=10",
+          "worstMaxGapMs": 516,
+          "worstP99LatenessMs": 43
         }
       }
     },
@@ -256,7 +256,7 @@
           "p99": 0
         },
         "ticksMaxGapMs": 0,
-        "url": "http://default--vv-qual-efea-server--grpc.openshell.localhost:17670"
+        "url": "http://default--vv-qual-6366-server--grpc.openshell.localhost:17670"
       }
     },
     {
@@ -267,23 +267,23 @@
         "chatError": null,
         "chatRttMs": {
           "count": 30,
-          "max": 10,
-          "min": 2,
-          "p50": 4,
-          "p99": 10
+          "max": 19,
+          "min": 1,
+          "p50": 3,
+          "p99": 19
         },
         "expected": 30,
         "test": "grpc",
         "ticksError": null,
         "ticksLatenessMs": {
           "count": 30,
-          "max": 5,
-          "min": 1,
-          "p50": 2,
-          "p99": 5
+          "max": 17,
+          "min": 2,
+          "p50": 3,
+          "p99": 17
         },
-        "ticksMaxGapMs": 502,
-        "url": "http://127.0.0.1:52889"
+        "ticksMaxGapMs": 514,
+        "url": "http://127.0.0.1:56750"
       }
     },
     {
@@ -291,7 +291,7 @@
       "rule": "a sandbox reaches an uninspected HTTP endpoint on the gateway host",
       "status": "pass",
       "details": {
-        "base": "http://host.openshell.internal:52871",
+        "base": "http://host.openshell.internal:56729",
         "basicAuth": {
           "body": {
             "authorization": {
@@ -313,9 +313,9 @@
           "contentMatches": true,
           "expectedBytes": 8388608,
           "firstMismatch": null,
-          "mibPerS": 256.83213612103214,
+          "mibPerS": 349.56376844948414,
           "receivedBytes": 8388608,
-          "seconds": 0.03114875,
+          "seconds": 0.022885667,
           "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
           "test": "big"
         },
@@ -339,7 +339,7 @@
             "jsonrpc": "2.0",
             "result": {
               "method": "tools/list",
-              "serverMs": 1791778302708
+              "serverMs": 1791842043594
             }
           },
           "status": 200
@@ -370,19 +370,19 @@
           "error": null,
           "latenessMs": {
             "count": 30,
-            "max": 8,
+            "max": 5,
             "min": 0,
             "p50": 0,
-            "p99": 8
+            "p99": 5
           },
-          "maxGapMs": 508,
+          "maxGapMs": 505,
           "received": 30
         },
         "streams": 10,
         "test": "sse",
-        "url": "http://host.openshell.internal:52871/sse?interval_ms=500&count=30",
-        "worstMaxGapMs": 508,
-        "worstP99LatenessMs": 8
+        "url": "http://host.openshell.internal:56729/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 506,
+        "worstP99LatenessMs": 5
       }
     },
     {
@@ -395,15 +395,15 @@
         "frameBytes": 65536,
         "latenessMs": {
           "count": 150,
-          "max": 0,
+          "max": 16,
           "min": 0,
           "p50": 0,
-          "p99": 0
+          "p99": 11
         },
-        "maxGapMs": 110,
+        "maxGapMs": 111,
         "received": 150,
         "test": "frames",
-        "url": "http://host.openshell.internal:52871/frames?interval_ms=100&count=150&frame_bytes=65536"
+        "url": "http://host.openshell.internal:56729/frames?interval_ms=100&count=150&frame_bytes=65536"
       }
     },
     {
@@ -416,14 +416,14 @@
         "expected": 30,
         "rttMs": {
           "count": 30,
-          "max": 13,
+          "max": 10,
           "min": 1,
-          "p50": 2,
-          "p99": 13
+          "p50": 1,
+          "p99": 10
         },
         "test": "ws",
         "upgradeStatus": 101,
-        "url": "ws://host.openshell.internal:52871/ws"
+        "url": "ws://host.openshell.internal:56729/ws"
       }
     },
     {
@@ -434,23 +434,23 @@
         "chatError": null,
         "chatRttMs": {
           "count": 30,
-          "max": 8,
+          "max": 18,
           "min": 1,
           "p50": 2,
-          "p99": 8
+          "p99": 18
         },
         "expected": 30,
         "test": "grpc",
         "ticksError": null,
         "ticksLatenessMs": {
           "count": 30,
-          "max": 4,
+          "max": 8,
           "min": 0,
           "p50": 0,
-          "p99": 4
+          "p99": 8
         },
-        "ticksMaxGapMs": 505,
-        "url": "http://host.openshell.internal:52872"
+        "ticksMaxGapMs": 516,
+        "url": "http://host.openshell.internal:56730"
       }
     },
     {
@@ -461,23 +461,23 @@
         "chatError": null,
         "chatRttMs": {
           "count": 30,
-          "max": 14,
-          "min": 0,
-          "p50": 2,
-          "p99": 14
+          "max": 12,
+          "min": 1,
+          "p50": 1,
+          "p99": 12
         },
         "expected": 30,
         "test": "grpc",
         "ticksError": null,
         "ticksLatenessMs": {
           "count": 30,
-          "max": 11,
+          "max": 8,
           "min": 0,
           "p50": 0,
-          "p99": 11
+          "p99": 8
         },
-        "ticksMaxGapMs": 514,
-        "url": "http://host.openshell.internal:52875"
+        "ticksMaxGapMs": 511,
+        "url": "http://host.openshell.internal:56733"
       }
     },
     {
@@ -500,7 +500,7 @@
       "details": {
         "connectError": "HTTP error: 403 Forbidden",
         "test": "ws",
-        "url": "ws://host.openshell.internal:52873/ws"
+        "url": "ws://host.openshell.internal:56731/ws"
       }
     },
     {
@@ -513,14 +513,14 @@
         "expected": 30,
         "rttMs": {
           "count": 30,
-          "max": 9,
-          "min": 1,
+          "max": 15,
+          "min": 0,
           "p50": 2,
-          "p99": 9
+          "p99": 15
         },
         "test": "ws",
         "upgradeStatus": 101,
-        "url": "ws://host.openshell.internal:52874/ws"
+        "url": "ws://host.openshell.internal:56732/ws"
       }
     },
     {
@@ -536,44 +536,82 @@
       }
     },
     {
-      "id": "surreal.inspected",
-      "rule": "SurrealDB queries and LIVE notifications work on an uninspected endpoint",
+      "id": "postgres.inspected",
+      "rule": "PostgreSQL answers queries, keeps a session advisory lock for the whole stream and notifies every write in order through LISTEN/NOTIFY on an endpoint without a protocol, which OpenShell inspects",
       "status": "pass",
       "details": {
-        "address": "host.openshell.internal:52876",
+        "address": "host.openshell.internal:56734",
+        "advisoryLock": {
+          "grantedAfterRelease": true,
+          "heldThroughStream": true,
+          "refusedAfterStream": true,
+          "refusedBeforeStream": true,
+          "releasedByHolder": true,
+          "sameSession": true
+        },
         "error": null,
         "expected": 30,
-        "liveLatencyMs": {
+        "firstWriteError": null,
+        "maxGapMs": 515,
+        "notified": 30,
+        "notifyLatencyMs": {
           "count": 30,
-          "max": 14,
+          "max": 16,
           "min": 1,
           "p50": 2,
-          "p99": 14
+          "p99": 16
         },
-        "maxGapMs": 511,
-        "notified": 30,
-        "test": "surreal",
+        "outOfOrder": 0,
+        "queryLatencyMs": {
+          "count": 30,
+          "max": 15,
+          "min": 1,
+          "p50": 2,
+          "p99": 15
+        },
+        "serverVersion": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "test": "postgres",
+        "tls": false,
         "writeErrors": 0
       }
     },
     {
-      "id": "surreal.tcp",
-      "rule": "SurrealDB queries and LIVE notifications work on a tcp endpoint",
+      "id": "postgres.tcp",
+      "rule": "PostgreSQL answers queries, keeps a session advisory lock for the whole stream and notifies every write in order through LISTEN/NOTIFY on a tcp endpoint",
       "status": "pass",
       "details": {
-        "address": "host.openshell.internal:52877",
+        "address": "host.openshell.internal:56735",
+        "advisoryLock": {
+          "grantedAfterRelease": true,
+          "heldThroughStream": true,
+          "refusedAfterStream": true,
+          "refusedBeforeStream": true,
+          "releasedByHolder": true,
+          "sameSession": true
+        },
         "error": null,
         "expected": 30,
-        "liveLatencyMs": {
+        "firstWriteError": null,
+        "maxGapMs": 506,
+        "notified": 30,
+        "notifyLatencyMs": {
           "count": 30,
-          "max": 18,
+          "max": 9,
           "min": 1,
           "p50": 2,
-          "p99": 18
+          "p99": 9
         },
-        "maxGapMs": 517,
-        "notified": 30,
-        "test": "surreal",
+        "outOfOrder": 0,
+        "queryLatencyMs": {
+          "count": 30,
+          "max": 9,
+          "min": 1,
+          "p50": 2,
+          "p99": 9
+        },
+        "serverVersion": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "test": "postgres",
+        "tls": false,
         "writeErrors": 0
       }
     },
@@ -587,11 +625,11 @@
         ],
         "ok": true,
         "rows": 2000,
-        "seconds": 0.22,
+        "seconds": 0.27,
         "segments": [
           "probe-segment-1"
         ],
-        "url": "rerun+http://127.0.0.1:52890",
+        "url": "rerun+http://127.0.0.1:56751",
         "versionInfo": "VersionInfo(version='exposed-version-unset', cloud_provider=None, cloud_region=None, features=['per_segment_index_values"
       }
     },
@@ -600,10 +638,10 @@
       "rule": "limit: native Redap clients cannot connect through exposure",
       "status": "limit",
       "details": {
-        "error": "ConnectionError: failed to connect to server 'rerun+http://default--vv-qual-efea-redap.openshell.localhost:17670': io: failed to lookup address information: Name or service not known (Connection)\n- Server: rerun+http://default--vv-qual-efea-redap.openshell.localhost:17670",
+        "error": "ConnectionError: failed to connect to server 'rerun+http://default--vv-qual-6366-redap.openshell.localhost:17670': io: failed to lookup address information: Name or service not known (Connection)\n- Server: rerun+http://default--vv-qual-6366-redap.openshell.localhost:17670",
         "ok": false,
-        "seconds": 1.76,
-        "url": "rerun+http://default--vv-qual-efea-redap.openshell.localhost:17670"
+        "seconds": 1.69,
+        "url": "rerun+http://default--vv-qual-6366-redap.openshell.localhost:17670"
       }
     },
     {
@@ -626,9 +664,9 @@
         "contentMatches": true,
         "expectedBytes": 536870912,
         "firstMismatch": null,
-        "mibPerS": 457.35383855209767,
+        "mibPerS": 436.4220323592038,
         "receivedBytes": 536870912,
-        "seconds": 1.119483334,
+        "seconds": 1.173176334,
         "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
         "test": "big"
       }
@@ -641,9 +679,9 @@
         "contentMatches": true,
         "expectedBytes": 536870912,
         "firstMismatch": null,
-        "mibPerS": 192.31404284619327,
+        "mibPerS": 238.81145133988292,
         "receivedBytes": 536870912,
-        "seconds": 2.6623120829999998,
+        "seconds": 2.143950791,
         "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
         "test": "big"
       }
@@ -656,22 +694,22 @@
         "cargoGitDependency": {
           "ok": true,
           "outputTail": "42\n",
-          "seconds": 0.867662083
+          "seconds": 0.857116459
         },
         "cargoInstall": {
           "ok": true,
           "outputTail": "/usr/local/cargo/bin/cargo-machete\n",
-          "seconds": 13.744238875
+          "seconds": 14.533439917
         },
         "gitFetch": {
           "ok": true,
-          "outputTail": "eeba0e7954c0fb4d8e9e2e29d1bfa68e290eb8b3\tHEAD\n",
-          "seconds": 1.243348958
+          "outputTail": "fc8d0d7adad96fce06c5d207682f050635ec9404\tHEAD\n",
+          "seconds": 0.732906458
         },
         "rustupTarget": {
           "ok": true,
           "outputTail": "info: downloading component rust-std\n",
-          "seconds": 1.729002792
+          "seconds": 1.949887208
         }
       }
     },
@@ -707,7 +745,7 @@
       "rule": "with a GitHub provider attached, a sandbox pushes to the one repository its policy allows, is refused on another and holds only a placeholder for the token",
       "status": "pass",
       "details": {
-        "branch": "qualify-efea",
+        "branch": "qualify-6366",
         "branchDeleted": {
           "ok": true,
           "outputTail": ""
@@ -718,10 +756,10 @@
         },
         "deniedRepository": "VeoveoAI/veoveo-core",
         "placeholderOnly": true,
-        "provider": "github-veoveo",
+        "provider": "vv-github",
         "pushAllowed": {
           "ok": true,
-          "outputTail": "remote: \nremote: Create a pull request for 'qualify-efea' on GitHub by visiting:        \nremote:      https://github.com/VeoveoAI/veoveo-qualify-openshell/pull/new/qualify-efea        \nremote: \n"
+          "outputTail": "remote: \nremote: Create a pull request for 'qualify-6366' on GitHub by visiting:        \nremote:      https://github.com/VeoveoAI/veoveo-qualify-openshell/pull/new/qualify-6366        \nremote: \n"
         },
         "pushRefused": {
           "ok": true,
@@ -737,13 +775,13 @@
       "details": {
         "direct": {
           "healthz": {
-            "error": "error sending request for url (http://default--vv-qual-efea-peer.openshell.localhost:17670/healthz)"
+            "error": "error sending request for url (http://default--vv-qual-6366-peer.openshell.localhost:17670/healthz)"
           },
           "mcpPost": {
-            "error": "error sending request for url (http://default--vv-qual-efea-peer.openshell.localhost:17670/mcp)"
+            "error": "error sending request for url (http://default--vv-qual-6366-peer.openshell.localhost:17670/mcp)"
           }
         },
-        "exposureUrl": "http://default--vv-qual-efea-peer.openshell.localhost:17670",
+        "exposureUrl": "http://default--vv-qual-6366-peer.openshell.localhost:17670",
         "gatewayListenerWithPeerAuthority": {
           "status": "403"
         }
@@ -754,9 +792,9 @@
       "rule": "a sandbox reaches another sandbox's service through a port forward on the gateway host, with MCP POST, bearer passthrough and SSE streams intact",
       "status": "pass",
       "details": {
-        "base": "http://host.openshell.internal:53816",
+        "base": "http://host.openshell.internal:58001",
         "http": {
-          "base": "http://host.openshell.internal:53816",
+          "base": "http://host.openshell.internal:58001",
           "basicAuth": {
             "body": {
               "authorization": {
@@ -778,9 +816,9 @@
             "contentMatches": true,
             "expectedBytes": 8388608,
             "firstMismatch": null,
-            "mibPerS": 94.70785302837594,
+            "mibPerS": 95.9987044014854,
             "receivedBytes": 8388608,
-            "seconds": 0.084470292,
+            "seconds": 0.083334458,
             "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
             "test": "big"
           },
@@ -804,7 +842,7 @@
               "jsonrpc": "2.0",
               "result": {
                 "method": "tools/list",
-                "serverMs": 1791778462388
+                "serverMs": 1791842203669
               }
             },
             "status": 200
@@ -823,19 +861,19 @@
             "error": null,
             "latenessMs": {
               "count": 30,
-              "max": 11,
+              "max": 9,
               "min": 1,
               "p50": 2,
-              "p99": 11
+              "p99": 9
             },
-            "maxGapMs": 508,
+            "maxGapMs": 510,
             "received": 30
           },
           "streams": 3,
           "test": "sse",
-          "url": "http://host.openshell.internal:53816/sse?interval_ms=500&count=30",
-          "worstMaxGapMs": 509,
-          "worstP99LatenessMs": 11
+          "url": "http://host.openshell.internal:58001/sse?interval_ms=500&count=30",
+          "worstMaxGapMs": 510,
+          "worstP99LatenessMs": 9
         }
       }
     },
@@ -857,7 +895,7 @@
         "boundResponse": {
           "authorization": {
             "bearerLen": 48,
-            "bearerSha256": "b669f89388103456cd61af684f2625529c9aa0756db98e1d205500a21322ceb1"
+            "bearerSha256": "2792871d9a14caabc0d42706a90b72afaae4d3c0b3596a4329dd18db94c5444d"
           }
         },
         "placeholderOnly": true,

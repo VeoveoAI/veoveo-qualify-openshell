@@ -2,7 +2,7 @@
 //! documented limitation, and every outcome keeps the measurements behind it.
 
 use super::{
-    host::{self, Surreal},
+    host::{self, Postgres},
     openshell::{self, Exposure, SandboxSpec},
     policy::{self, HostPorts},
     report::Outcome,
@@ -106,8 +106,8 @@ pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outc
         mcp_http: host::free_port()?,
         websocket_http: host::free_port()?,
         tcp_grpc: host::free_port()?,
-        surreal_inspected: host::free_port()?,
-        surreal_tcp: host::free_port()?,
+        postgres_inspected: host::free_port()?,
+        postgres_tcp: host::free_port()?,
     };
     let servers = vec![
         host::spawn_server(ports.plain_http, ports.plain_grpc),
@@ -115,11 +115,11 @@ pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outc
         host::spawn_server(ports.websocket_http, host::free_port()?),
         host::spawn_server(host::free_port()?, ports.tcp_grpc),
     ];
-    let surreal_container = format!("vv-qual-{}-surreal", settings.run_id);
-    let surreal = Surreal::start(
-        &surreal_container,
-        ports.surreal_inspected,
-        ports.surreal_tcp,
+    let postgres_container = format!("vv-qual-{}-postgres", settings.run_id);
+    let postgres = Postgres::start(
+        &postgres_container,
+        ports.postgres_inspected,
+        ports.postgres_tcp,
     )
     .await?;
 
@@ -132,7 +132,7 @@ pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outc
         gpu: settings.gpu.then(|| format!("{prefix}-gpu")),
     };
     let outcome = async {
-        let context = setup(settings, workdir, ports, &sandboxes, &surreal).await?;
+        let context = setup(settings, workdir, ports, &sandboxes, &postgres).await?;
         Ok::<_, anyhow::Error>(scenarios(settings, workdir, &context).await)
     }
     .await;
@@ -142,7 +142,7 @@ pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outc
             openshell::forward_stop_all(name).await;
             openshell::delete(name).await;
         }
-        surreal.stop().await;
+        postgres.stop().await;
     }
     for server in servers {
         server.abort();
@@ -155,7 +155,7 @@ async fn setup(
     workdir: &Path,
     ports: HostPorts,
     sandboxes: &Sandboxes,
-    surreal: &Surreal,
+    postgres: &Postgres,
 ) -> anyhow::Result<RunContext> {
     let server_policy = workdir.join("server.yaml");
     let client_policy = workdir.join("client.yaml");
@@ -207,10 +207,7 @@ async fn setup(
     let mut client = spec(&sandboxes.client, &client_policy, sleep());
     client
         .env
-        .push(("VEOVEO_SURREAL_USERNAME".into(), "root".into()));
-    client
-        .env
-        .push(("VEOVEO_SURREAL_PASSWORD".into(), surreal.password.clone()));
+        .push(("VEOVEO_DATABASE_PASSWORD".into(), postgres.password.clone()));
     openshell::create(&client)
         .await
         .context("create client sandbox")?;
@@ -733,22 +730,26 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
 
     for (id, port, rule) in [
         (
-            "surreal.inspected",
-            ports.surreal_inspected,
-            "SurrealDB queries and LIVE notifications work on an uninspected endpoint",
+            "postgres.inspected",
+            ports.postgres_inspected,
+            "PostgreSQL answers queries, keeps a session advisory lock for the whole stream and notifies every write in order through LISTEN/NOTIFY on an endpoint without a protocol, which OpenShell inspects",
         ),
         (
-            "surreal.tcp",
-            ports.surreal_tcp,
-            "SurrealDB queries and LIVE notifications work on a tcp endpoint",
+            "postgres.tcp",
+            ports.postgres_tcp,
+            "PostgreSQL answers queries, keeps a session advisory lock for the whole stream and notifies every write in order through LISTEN/NOTIFY on a tcp endpoint",
         ),
     ] {
-        let address = format!("{host}:{port}");
+        let url = format!(
+            "postgres://{}@{host}:{port}/{}",
+            Postgres::USER,
+            Postgres::DATABASE
+        );
         outcomes.push(
             match probe(args(&[
-                "surreal",
-                "--address",
-                &address,
+                "postgres",
+                "--url",
+                &url,
                 "--seconds",
                 &seconds,
                 "--interval-ms",
@@ -760,7 +761,9 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
                     id,
                     rule,
                     num(&r, "/notified") == num(&r, "/expected")
+                        && num(&r, "/outOfOrder") == Some(0)
                         && num(&r, "/writeErrors") == Some(0)
+                        && r.pointer("/advisoryLock/heldThroughStream") == Some(&json!(true))
                         && r["error"].is_null(),
                     r,
                 ),

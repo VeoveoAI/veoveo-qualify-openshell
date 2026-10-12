@@ -89,8 +89,11 @@ pub struct HostPorts {
     pub mcp_http: u16,
     pub websocket_http: u16,
     pub tcp_grpc: u16,
-    pub surreal_inspected: u16,
-    pub surreal_tcp: u16,
+    /// PostgreSQL behind an endpoint without a protocol, which OpenShell inspects for TLS
+    /// and HTTP before relaying other traffic.
+    pub postgres_inspected: u16,
+    /// PostgreSQL behind a `tcp` endpoint.
+    pub postgres_tcp: u16,
 }
 
 pub const DENIED_TOOL: &str = "forbidden_tool";
@@ -190,17 +193,17 @@ pub fn client(ports: &HostPorts) -> Policy {
         },
     );
     rules.insert(
-        "surrealdb",
+        "postgres",
         Rule {
             endpoints: vec![
                 Endpoint {
                     host: HOST.into(),
-                    port: Some(ports.surreal_inspected),
+                    port: Some(ports.postgres_inspected),
                     ..Default::default()
                 },
                 Endpoint {
                     host: HOST.into(),
-                    port: Some(ports.surreal_tcp),
+                    port: Some(ports.postgres_tcp),
                     protocol: Some("tcp"),
                     ..Default::default()
                 },

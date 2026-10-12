@@ -6,10 +6,10 @@
 pub mod client;
 pub mod grpc;
 pub mod harness;
+pub mod postgres;
 pub mod probes;
 pub mod server;
 pub mod stats;
-pub mod surreal;
 
 pub fn now_ms() -> u64 {
     std::time::SystemTime::now()

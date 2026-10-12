@@ -1,17 +1,17 @@
 {
-  "format": "veoveo.ai/openshell-qualification/v1",
-  "harness_version": "0.1.0",
-  "started_at_ms": 1791762721404,
-  "duration_ms": 271033,
-  "stream_seconds": 15,
+  "format": "https://veoveo.ai/formats/openshell-qualification",
+  "harnessVersion": "0.1.0",
+  "startedAt": "2026-10-12T06:23:11.430Z",
+  "durationMs": 266112,
+  "streamSeconds": 15,
   "host": {
     "id": "linux-x86_64",
     "os": "linux",
     "arch": "x86_64",
-    "docker_server": "29.2.1",
-    "docker_kernel": "6.8.0-142-generic",
+    "dockerServer": "29.2.1",
+    "dockerKernel": "6.8.0-142-generic",
     "openshell": "0.1.3",
-    "compute_driver": "docker"
+    "computeDriver": "docker"
   },
   "outcomes": [
     {
@@ -19,30 +19,31 @@
       "rule": "exposed HTTP answers health, MCP POST and form tokens, passes one Bearer header and refuses Basic",
       "status": "pass",
       "details": {
-        "base": "http://default--q630ba9-server.openshell.localhost:17670",
-        "basic_auth": {
+        "base": "http://default--vv-qual-8a46-server.openshell.localhost:17670",
+        "basicAuth": {
           "body": "Invalid service request",
           "status": 400
         },
-        "bearer_auth": {
+        "bearerAuth": {
           "body": {
             "authorization": {
-              "bearer_len": 18
+              "bearerLen": 18,
+              "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
             }
           },
           "status": 200
         },
-        "body_8mib": {
-          "content_matches": true,
-          "expected_bytes": 8388608,
-          "first_mismatch": null,
-          "mib_per_s": 221.57455364706314,
-          "received_bytes": 8388608,
-          "seconds": 0.036105229,
+        "body8mib": {
+          "contentMatches": true,
+          "expectedBytes": 8388608,
+          "firstMismatch": null,
+          "mibPerS": 237.71910421260836,
+          "receivedBytes": 8388608,
+          "seconds": 0.033653164,
           "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
           "test": "big"
         },
-        "form_token": {
+        "formToken": {
           "body": {
             "authorization": "absent",
             "fields": [
@@ -56,13 +57,13 @@
           "body": "ok",
           "status": 200
         },
-        "mcp_post": {
+        "mcpPost": {
           "body": {
             "id": 1,
             "jsonrpc": "2.0",
             "result": {
               "method": "tools/list",
-              "server_ms": 1791762765890
+              "serverMs": 1791786208400
             }
           },
           "status": 200
@@ -78,7 +79,7 @@
         "echoed": 30,
         "error": null,
         "expected": 30,
-        "rtt_ms": {
+        "rttMs": {
           "count": 30,
           "max": 2,
           "min": 0,
@@ -86,8 +87,8 @@
           "p99": 2
         },
         "test": "ws",
-        "upgrade_status": 101,
-        "url": "ws://default--q630ba9-server.openshell.localhost:17670/ws"
+        "upgradeStatus": 101,
+        "url": "ws://default--vv-qual-8a46-server.openshell.localhost:17670/ws"
       }
     },
     {
@@ -95,7 +96,7 @@
       "rule": "ten exposed SSE streams deliver every event without buffering",
       "status": "pass",
       "details": {
-        "complete_streams": 10,
+        "completeStreams": 10,
         "errors": [
           null,
           null,
@@ -108,24 +109,24 @@
           null,
           null
         ],
-        "expected_per_stream": 30,
-        "first_stream": {
+        "expectedPerStream": 30,
+        "firstStream": {
           "error": null,
-          "lateness_ms": {
+          "latenessMs": {
             "count": 30,
             "max": 1,
             "min": 0,
             "p50": 0,
             "p99": 1
           },
-          "max_gap_ms": 501,
+          "maxGapMs": 501,
           "received": 30
         },
         "streams": 10,
         "test": "sse",
-        "url": "http://default--q630ba9-server.openshell.localhost:17670/sse?interval_ms=500&count=30",
-        "worst_max_gap_ms": 501,
-        "worst_p99_lateness_ms": 40
+        "url": "http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 501,
+        "worstP99LatenessMs": 40
       }
     },
     {
@@ -135,18 +136,18 @@
       "details": {
         "error": null,
         "expected": 150,
-        "frame_bytes": 65536,
-        "lateness_ms": {
+        "frameBytes": 65536,
+        "latenessMs": {
           "count": 150,
           "max": 2,
           "min": 0,
           "p50": 1,
           "p99": 2
         },
-        "max_gap_ms": 101,
+        "maxGapMs": 101,
         "received": 150,
         "test": "frames",
-        "url": "http://default--q630ba9-server.openshell.localhost:17670/frames?interval_ms=100&count=150&frame_bytes=65536"
+        "url": "http://default--vv-qual-8a46-server.openshell.localhost:17670/frames?interval_ms=100&count=150&frame_bytes=65536"
       }
     },
     {
@@ -154,14 +155,22 @@
       "rule": "fifty simultaneous exposed SSE opens either stream completely or are refused with 502 at setup",
       "status": "pass",
       "details": {
-        "complete_streams": 47,
-        "refused": 3,
+        "completeStreams": 43,
+        "refused": 7,
         "report": {
-          "complete_streams": 47,
+          "completeStreams": 43,
           "errors": [
             null,
             null,
             null,
+            "HTTP status server error (502 Bad Gateway) for url (http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
+            "HTTP status server error (502 Bad Gateway) for url (http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
+            null,
+            "HTTP status server error (502 Bad Gateway) for url (http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
+            null,
+            "HTTP status server error (502 Bad Gateway) for url (http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
+            null,
+            "HTTP status server error (502 Bad Gateway) for url (http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
             null,
             null,
             null,
@@ -169,23 +178,7 @@
             null,
             null,
             null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--q630ba9-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            "HTTP status server error (502 Bad Gateway) for url (http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
             null,
             null,
             null,
@@ -204,30 +197,38 @@
             null,
             null,
             null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--q630ba9-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
             null,
-            "HTTP status server error (502 Bad Gateway) for url (http://default--q630ba9-server.openshell.localhost:17670/sse?interval_ms=500&count=10)",
             null,
-            null
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "HTTP status server error (502 Bad Gateway) for url (http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10)"
           ],
-          "expected_per_stream": 10,
-          "first_stream": {
+          "expectedPerStream": 10,
+          "firstStream": {
             "error": null,
-            "lateness_ms": {
+            "latenessMs": {
               "count": 10,
               "max": 1,
               "min": 0,
               "p50": 0,
               "p99": 1
             },
-            "max_gap_ms": 500,
+            "maxGapMs": 501,
             "received": 10
           },
           "streams": 50,
           "test": "sse",
-          "url": "http://default--q630ba9-server.openshell.localhost:17670/sse?interval_ms=500&count=10",
-          "worst_max_gap_ms": 501,
-          "worst_p99_lateness_ms": 40
+          "url": "http://default--vv-qual-8a46-server.openshell.localhost:17670/sse?interval_ms=500&count=10",
+          "worstMaxGapMs": 501,
+          "worstP99LatenessMs": 40
         }
       }
     },
@@ -236,8 +237,8 @@
       "rule": "limit: exposure relays HTTP/1.1, so native gRPC through exposure fails",
       "status": "limit",
       "details": {
-        "chat_error": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
-        "chat_rtt_ms": {
+        "chatError": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
+        "chatRttMs": {
           "count": 0,
           "max": 0,
           "min": 0,
@@ -246,16 +247,16 @@
         },
         "expected": 6,
         "test": "grpc",
-        "ticks_error": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
-        "ticks_lateness_ms": {
+        "ticksError": "code: 'Internal error', message: \"protocol error: received message with invalid compression flag: 83 (valid flags are 0 and 1) while receiving response with status: 502 Bad Gateway\"",
+        "ticksLatenessMs": {
           "count": 0,
           "max": 0,
           "min": 0,
           "p50": 0,
           "p99": 0
         },
-        "ticks_max_gap_ms": 0,
-        "url": "http://default--q630ba9-server--grpc.openshell.localhost:17670"
+        "ticksMaxGapMs": 0,
+        "url": "http://default--vv-qual-8a46-server--grpc.openshell.localhost:17670"
       }
     },
     {
@@ -263,26 +264,26 @@
       "rule": "native gRPC through a port forward streams in both directions",
       "status": "pass",
       "details": {
-        "chat_error": null,
-        "chat_rtt_ms": {
+        "chatError": null,
+        "chatRttMs": {
           "count": 30,
-          "max": 2,
+          "max": 3,
           "min": 1,
-          "p50": 2,
-          "p99": 2
+          "p50": 1,
+          "p99": 3
         },
         "expected": 30,
         "test": "grpc",
-        "ticks_error": null,
-        "ticks_lateness_ms": {
+        "ticksError": null,
+        "ticksLatenessMs": {
           "count": 30,
           "max": 1,
           "min": 0,
-          "p50": 1,
+          "p50": 0,
           "p99": 1
         },
-        "ticks_max_gap_ms": 501,
-        "url": "http://127.0.0.1:34075"
+        "ticksMaxGapMs": 501,
+        "url": "http://127.0.0.1:42627"
       }
     },
     {
@@ -290,34 +291,35 @@
       "rule": "a sandbox reaches an uninspected HTTP endpoint on the gateway host",
       "status": "pass",
       "details": {
-        "base": "http://host.openshell.internal:44489",
-        "basic_auth": {
+        "base": "http://host.openshell.internal:34847",
+        "basicAuth": {
           "body": {
             "authorization": {
-              "other_scheme": "Basic"
+              "otherScheme": "Basic"
             }
           },
           "status": 200
         },
-        "bearer_auth": {
+        "bearerAuth": {
           "body": {
             "authorization": {
-              "bearer_len": 18
+              "bearerLen": 18,
+              "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
             }
           },
           "status": 200
         },
-        "body_8mib": {
-          "content_matches": true,
-          "expected_bytes": 8388608,
-          "first_mismatch": null,
-          "mib_per_s": 382.2783406826345,
-          "received_bytes": 8388608,
-          "seconds": 0.02092716,
+        "body8mib": {
+          "contentMatches": true,
+          "expectedBytes": 8388608,
+          "firstMismatch": null,
+          "mibPerS": 439.7054940541924,
+          "receivedBytes": 8388608,
+          "seconds": 0.018193996,
           "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
           "test": "big"
         },
-        "form_token": {
+        "formToken": {
           "body": {
             "authorization": "absent",
             "fields": [
@@ -331,13 +333,13 @@
           "body": "ok",
           "status": 200
         },
-        "mcp_post": {
+        "mcpPost": {
           "body": {
             "id": 1,
             "jsonrpc": "2.0",
             "result": {
               "method": "tools/list",
-              "server_ms": 1791762828975
+              "serverMs": 1791786275961
             }
           },
           "status": 200
@@ -350,7 +352,7 @@
       "rule": "ten outbound SSE streams deliver every event without buffering",
       "status": "pass",
       "details": {
-        "complete_streams": 10,
+        "completeStreams": 10,
         "errors": [
           null,
           null,
@@ -363,24 +365,24 @@
           null,
           null
         ],
-        "expected_per_stream": 30,
-        "first_stream": {
+        "expectedPerStream": 30,
+        "firstStream": {
           "error": null,
-          "lateness_ms": {
+          "latenessMs": {
             "count": 30,
             "max": 1,
             "min": 0,
-            "p50": 0,
+            "p50": 1,
             "p99": 1
           },
-          "max_gap_ms": 501,
+          "maxGapMs": 501,
           "received": 30
         },
         "streams": 10,
         "test": "sse",
-        "url": "http://host.openshell.internal:44489/sse?interval_ms=500&count=30",
-        "worst_max_gap_ms": 501,
-        "worst_p99_lateness_ms": 1
+        "url": "http://host.openshell.internal:34847/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 501,
+        "worstP99LatenessMs": 1
       }
     },
     {
@@ -390,18 +392,18 @@
       "details": {
         "error": null,
         "expected": 150,
-        "frame_bytes": 65536,
-        "lateness_ms": {
+        "frameBytes": 65536,
+        "latenessMs": {
           "count": 150,
           "max": 2,
           "min": 0,
           "p50": 1,
           "p99": 1
         },
-        "max_gap_ms": 101,
+        "maxGapMs": 101,
         "received": 150,
         "test": "frames",
-        "url": "http://host.openshell.internal:44489/frames?interval_ms=100&count=150&frame_bytes=65536"
+        "url": "http://host.openshell.internal:34847/frames?interval_ms=100&count=150&frame_bytes=65536"
       }
     },
     {
@@ -412,7 +414,7 @@
         "echoed": 30,
         "error": null,
         "expected": 30,
-        "rtt_ms": {
+        "rttMs": {
           "count": 30,
           "max": 1,
           "min": 0,
@@ -420,8 +422,8 @@
           "p99": 1
         },
         "test": "ws",
-        "upgrade_status": 101,
-        "url": "ws://host.openshell.internal:44489/ws"
+        "upgradeStatus": 101,
+        "url": "ws://host.openshell.internal:34847/ws"
       }
     },
     {
@@ -429,8 +431,8 @@
       "rule": "outbound native gRPC streams in both directions on an uninspected endpoint",
       "status": "pass",
       "details": {
-        "chat_error": null,
-        "chat_rtt_ms": {
+        "chatError": null,
+        "chatRttMs": {
           "count": 30,
           "max": 2,
           "min": 0,
@@ -439,16 +441,16 @@
         },
         "expected": 30,
         "test": "grpc",
-        "ticks_error": null,
-        "ticks_lateness_ms": {
+        "ticksError": null,
+        "ticksLatenessMs": {
           "count": 30,
           "max": 1,
           "min": 0,
           "p50": 0,
           "p99": 1
         },
-        "ticks_max_gap_ms": 501,
-        "url": "http://host.openshell.internal:42867"
+        "ticksMaxGapMs": 501,
+        "url": "http://host.openshell.internal:42863"
       }
     },
     {
@@ -456,8 +458,8 @@
       "rule": "outbound native gRPC streams in both directions on a tcp endpoint",
       "status": "pass",
       "details": {
-        "chat_error": null,
-        "chat_rtt_ms": {
+        "chatError": null,
+        "chatRttMs": {
           "count": 30,
           "max": 1,
           "min": 0,
@@ -466,16 +468,16 @@
         },
         "expected": 30,
         "test": "grpc",
-        "ticks_error": null,
-        "ticks_lateness_ms": {
+        "ticksError": null,
+        "ticksLatenessMs": {
           "count": 30,
           "max": 1,
           "min": 0,
           "p50": 0,
           "p99": 1
         },
-        "ticks_max_gap_ms": 501,
-        "url": "http://host.openshell.internal:40869"
+        "ticksMaxGapMs": 501,
+        "url": "http://host.openshell.internal:42527"
       }
     },
     {
@@ -483,12 +485,12 @@
       "rule": "MCP 2026-07-28 inspection allows tools/list, server/discover and an allowed tool, denies a denied tool and rejects a missing Mcp-Method header",
       "status": "pass",
       "details": {
-        "allowed_tool": 200,
-        "denied_tool": 403,
-        "missing_method_header": 400,
-        "server_discover": 200,
+        "allowedTool": 200,
+        "deniedTool": 403,
+        "missingMethodHeader": 400,
+        "serverDiscover": 200,
         "test": "mcp_policy",
-        "tools_list": 200
+        "toolsList": 200
       }
     },
     {
@@ -496,9 +498,9 @@
       "rule": "limit: endpoints inspected as MCP refuse WebSocket upgrades with 403",
       "status": "limit",
       "details": {
-        "connect_error": "HTTP error: 403 Forbidden",
+        "connectError": "HTTP error: 403 Forbidden",
         "test": "ws",
-        "url": "ws://host.openshell.internal:37485/ws"
+        "url": "ws://host.openshell.internal:34197/ws"
       }
     },
     {
@@ -509,16 +511,16 @@
         "echoed": 30,
         "error": null,
         "expected": 30,
-        "rtt_ms": {
+        "rttMs": {
           "count": 30,
           "max": 2,
-          "min": 1,
+          "min": 0,
           "p50": 1,
           "p99": 2
         },
         "test": "ws",
-        "upgrade_status": 101,
-        "url": "ws://host.openshell.internal:39969/ws"
+        "upgradeStatus": 101,
+        "url": "ws://host.openshell.internal:37955/ws"
       }
     },
     {
@@ -538,20 +540,20 @@
       "rule": "SurrealDB queries and LIVE notifications work on an uninspected endpoint",
       "status": "pass",
       "details": {
-        "address": "host.openshell.internal:44141",
+        "address": "host.openshell.internal:37695",
         "error": null,
         "expected": 30,
-        "live_latency_ms": {
+        "liveLatencyMs": {
           "count": 30,
-          "max": 21,
+          "max": 32,
           "min": 1,
-          "p50": 2,
-          "p99": 21
+          "p50": 1,
+          "p99": 32
         },
-        "max_gap_ms": 502,
+        "maxGapMs": 501,
         "notified": 30,
         "test": "surreal",
-        "write_errors": 0
+        "writeErrors": 0
       }
     },
     {
@@ -559,20 +561,20 @@
       "rule": "SurrealDB queries and LIVE notifications work on a tcp endpoint",
       "status": "pass",
       "details": {
-        "address": "host.openshell.internal:38779",
+        "address": "host.openshell.internal:46251",
         "error": null,
         "expected": 30,
-        "live_latency_ms": {
+        "liveLatencyMs": {
           "count": 30,
-          "max": 26,
+          "max": 20,
           "min": 1,
           "p50": 1,
-          "p99": 26
+          "p99": 20
         },
-        "max_gap_ms": 502,
+        "maxGapMs": 502,
         "notified": 30,
         "test": "surreal",
-        "write_errors": 0
+        "writeErrors": 0
       }
     },
     {
@@ -585,12 +587,12 @@
         ],
         "ok": true,
         "rows": 2000,
-        "seconds": 0.19,
+        "seconds": 0.21,
         "segments": [
           "probe-segment-1"
         ],
-        "url": "rerun+http://127.0.0.1:35437",
-        "version_info": "VersionInfo(version='exposed-version-unset', cloud_provider=None, cloud_region=None, features=['per_segment_index_values"
+        "url": "rerun+http://127.0.0.1:39707",
+        "versionInfo": "VersionInfo(version='exposed-version-unset', cloud_provider=None, cloud_region=None, features=['per_segment_index_values"
       }
     },
     {
@@ -598,10 +600,10 @@
       "rule": "limit: native Redap clients cannot connect through exposure",
       "status": "limit",
       "details": {
-        "error": "RuntimeError: verifying connection to server: grpc-status header missing, mapped from HTTP status code 400 (Internal)\n- Server: rerun+http://default--q630ba9-redap.openshell.localhost:17670\n- trace-id: abba000000000000000000000000abba\n- metadata: {\"x-request-trace-id\": \"abba000000000000000000000000abba\", \"vary\": ",
+        "error": "RuntimeError: verifying connection to server: grpc-status header missing, mapped from HTTP status code 400 (Internal)\n- Server: rerun+http://default--vv-qual-8a46-redap.openshell.localhost:17670\n- trace-id: abba000000000000000000000000abba\n- metadata: {\"x-request-trace-id\": \"abba000000000000000000000000abba\", \"va",
         "ok": false,
-        "seconds": 0.18,
-        "url": "rerun+http://default--q630ba9-redap.openshell.localhost:17670"
+        "seconds": 0.17,
+        "url": "rerun+http://default--vv-qual-8a46-redap.openshell.localhost:17670"
       }
     },
     {
@@ -609,9 +611,9 @@
       "rule": "Redap gRPC-Web, used by the WebViewer, answers through exposure",
       "status": "pass",
       "details": {
-        "body_bytes": 276,
-        "content_type": "application/grpc-web+proto",
-        "grpc_status_ok": true,
+        "bodyBytes": 276,
+        "contentType": "application/grpc-web+proto",
+        "grpcStatusOk": true,
         "status": 200,
         "test": "grpc_web"
       }
@@ -621,12 +623,12 @@
       "rule": "a sandbox downloads a large body from the gateway host byte-exact",
       "status": "pass",
       "details": {
-        "content_matches": true,
-        "expected_bytes": 536870912,
-        "first_mismatch": null,
-        "mib_per_s": 531.351444473609,
-        "received_bytes": 536870912,
-        "seconds": 0.963580706,
+        "contentMatches": true,
+        "expectedBytes": 536870912,
+        "firstMismatch": null,
+        "mibPerS": 523.6121856651864,
+        "receivedBytes": 536870912,
+        "seconds": 0.977822927,
         "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
         "test": "big"
       }
@@ -636,12 +638,12 @@
       "rule": "the host downloads a large body from an exposed sandbox service byte-exact",
       "status": "pass",
       "details": {
-        "content_matches": true,
-        "expected_bytes": 536870912,
-        "first_mismatch": null,
-        "mib_per_s": 378.91883913554113,
-        "received_bytes": 536870912,
-        "seconds": 1.351212838,
+        "contentMatches": true,
+        "expectedBytes": 536870912,
+        "firstMismatch": null,
+        "mibPerS": 416.78903094693476,
+        "receivedBytes": 536870912,
+        "seconds": 1.228439239,
         "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
         "test": "big"
       }
@@ -651,25 +653,25 @@
       "rule": "inside a sandbox, rustup adds a target, cargo installs a crate, Git fetches from GitHub and a Cargo Git dependency builds",
       "status": "pass",
       "details": {
-        "cargo_git_dependency": {
+        "cargoGitDependency": {
           "ok": true,
-          "output_tail": "42\n",
-          "seconds": 0.885072285
+          "outputTail": "42\n",
+          "seconds": 0.874309476
         },
-        "cargo_install": {
+        "cargoInstall": {
           "ok": true,
-          "output_tail": "/usr/local/cargo/bin/cargo-machete\n",
-          "seconds": 18.74715909
+          "outputTail": "/usr/local/cargo/bin/cargo-machete\n",
+          "seconds": 17.889910204
         },
-        "git_fetch": {
+        "gitFetch": {
           "ok": true,
-          "output_tail": "eeba0e7954c0fb4d8e9e2e29d1bfa68e290eb8b3\tHEAD\n",
-          "seconds": 0.649864914
+          "outputTail": "77c5ff6e20c98b3674616ecf35b2464f2b8e57ca\tHEAD\n",
+          "seconds": 0.653376519
         },
-        "rustup_target": {
+        "rustupTarget": {
           "ok": true,
-          "output_tail": "info: downloading component rust-std\n",
-          "seconds": 2.229054759
+          "outputTail": "info: downloading component rust-std\n",
+          "seconds": 2.09462243
         }
       }
     },
@@ -678,17 +680,17 @@
       "rule": "the workspace keeps a verified cache and Cargo output across stop, start and restart-policy replacement",
       "status": "pass",
       "details": {
-        "after_restart": {
+        "afterRestart": {
           "ok": true,
-          "restart_count": 1
+          "restartCount": 1
         },
-        "after_stop_start": {
+        "afterStopStart": {
           "error": null,
           "ok": true
         },
         "prepare": {
           "ok": true,
-          "output_tail": ""
+          "outputTail": ""
         }
       }
     },
@@ -705,27 +707,161 @@
       "rule": "with a GitHub provider attached, a sandbox pushes to the one repository its policy allows, is refused on another and holds only a placeholder for the token",
       "status": "pass",
       "details": {
-        "branch": "qualify-630ba9",
-        "branch_deleted": {
+        "branch": "qualify-8a46",
+        "branchDeleted": {
           "ok": true,
-          "output_tail": ""
+          "outputTail": ""
         },
-        "credential_helper": {
+        "credentialHelper": {
           "ok": true,
-          "output_tail": ""
+          "outputTail": ""
         },
-        "denied_repository": "VeoveoAI/veoveo-core",
-        "placeholder_only": true,
-        "provider": "github-veoveo",
-        "push_allowed": {
+        "deniedRepository": "VeoveoAI/veoveo-core",
+        "placeholderOnly": true,
+        "provider": "vv-github",
+        "pushAllowed": {
           "ok": true,
-          "output_tail": "remote: \nremote: Create a pull request for 'qualify-630ba9' on GitHub by visiting:        \nremote:      https://github.com/VeoveoAI/veoveo-qualify-openshell/pull/new/qualify-630ba9        \nremote: \n"
+          "outputTail": "remote: \nremote: Create a pull request for 'qualify-8a46' on GitHub by visiting:        \nremote:      https://github.com/VeoveoAI/veoveo-qualify-openshell/pull/new/qualify-8a46        \nremote: \n"
         },
-        "push_refused": {
+        "pushRefused": {
           "ok": true,
-          "output_tail": "error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403\nsend-pack: unexpected disconnect while reading sideband packet\nfatal: the remote end hung up unexpectedly\n"
+          "outputTail": "error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403\nsend-pack: unexpected disconnect while reading sideband packet\nfatal: the remote end hung up unexpectedly\n"
         },
-        "push_repository": "VeoveoAI/veoveo-qualify-openshell"
+        "pushRepository": "VeoveoAI/veoveo-qualify-openshell"
+      }
+    },
+    {
+      "id": "peer.exposure",
+      "rule": "limit: a sandbox cannot reach another sandbox's exposed service, because the exposure name resolves to its own loopback and requests to host.openshell.internal must carry that authority",
+      "status": "limit",
+      "details": {
+        "direct": {
+          "healthz": {
+            "error": "error sending request for url (http://default--vv-qual-8a46-peer.openshell.localhost:17670/healthz)"
+          },
+          "mcpPost": {
+            "error": "error sending request for url (http://default--vv-qual-8a46-peer.openshell.localhost:17670/mcp)"
+          }
+        },
+        "exposureUrl": "http://default--vv-qual-8a46-peer.openshell.localhost:17670",
+        "gatewayListenerWithPeerAuthority": {
+          "status": "403"
+        }
+      }
+    },
+    {
+      "id": "peer.forward",
+      "rule": "a sandbox reaches another sandbox's service through a port forward on the gateway host, with MCP POST, bearer passthrough and SSE streams intact",
+      "status": "pass",
+      "details": {
+        "base": "http://host.openshell.internal:43331",
+        "http": {
+          "base": "http://host.openshell.internal:43331",
+          "basicAuth": {
+            "body": {
+              "authorization": {
+                "otherScheme": "Basic"
+              }
+            },
+            "status": 200
+          },
+          "bearerAuth": {
+            "body": {
+              "authorization": {
+                "bearerLen": 18,
+                "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
+              }
+            },
+            "status": 200
+          },
+          "body8mib": {
+            "contentMatches": true,
+            "expectedBytes": 8388608,
+            "firstMismatch": null,
+            "mibPerS": 159.0355100649499,
+            "receivedBytes": 8388608,
+            "seconds": 0.050303231,
+            "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
+            "test": "big"
+          },
+          "formToken": {
+            "body": {
+              "authorization": "absent",
+              "fields": [
+                "client_assertion",
+                "grant_type"
+              ]
+            },
+            "status": 200
+          },
+          "healthz": {
+            "body": "ok",
+            "status": 200
+          },
+          "mcpPost": {
+            "body": {
+              "id": 1,
+              "jsonrpc": "2.0",
+              "result": {
+                "method": "tools/list",
+                "serverMs": 1791786439129
+              }
+            },
+            "status": 200
+          },
+          "test": "http"
+        },
+        "sse": {
+          "completeStreams": 3,
+          "errors": [
+            null,
+            null,
+            null
+          ],
+          "expectedPerStream": 30,
+          "firstStream": {
+            "error": null,
+            "latenessMs": {
+              "count": 30,
+              "max": 2,
+              "min": 0,
+              "p50": 1,
+              "p99": 2
+            },
+            "maxGapMs": 501,
+            "received": 30
+          },
+          "streams": 3,
+          "test": "sse",
+          "url": "http://host.openshell.internal:43331/sse?interval_ms=500&count=30",
+          "worstMaxGapMs": 501,
+          "worstP99LatenessMs": 2
+        }
+      }
+    },
+    {
+      "id": "sandbox.loopback_close",
+      "rule": "limit: inside a sandbox a closed loopback listener keeps completing TCP handshakes, while a port that never listened refuses",
+      "status": "limit",
+      "details": {
+        "closedListener": "succeeded",
+        "neverListened": "ConnectionRefusedError"
+      }
+    },
+    {
+      "id": "provider.bound_secret",
+      "rule": "an endpointless provider's secret reaches only the endpoint a sandbox policy binds it to: the sandbox holds a placeholder, the bound endpoint receives the value and another allowed endpoint is refused",
+      "status": "pass",
+      "details": {
+        "boundEndpointReceivedSecret": true,
+        "boundResponse": {
+          "authorization": {
+            "bearerLen": 48,
+            "bearerSha256": "e49318e72801bc8f9cceae8a918c1df6d1ce5db9c4da60752b70b7839a7d4f38"
+          }
+        },
+        "placeholderOnly": true,
+        "unboundEndpointResponse": "{\"error\":\"credential_endpoint_mismatch\",\"message\":\"Credential is not authorized for this request endpoint\"} status=403"
       }
     },
     {

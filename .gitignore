@@ -1,2 +1,9 @@
 target/
 results/*/scratch/
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template

@@ -96,3 +96,44 @@ be revisited.
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## Focused macOS Native Path
+
+The local hard cut uses OpenShell 0.1.4 with the maintained supervisor HTTP/2 patch.
+This is a focused first-path qualification, separate from the broad 0.1.3 reports.
+It makes no inference calls. Exact source revisions and machine-local image IDs are
+recorded in the installation's [component lock](../veoveo-template-installation/openshell/component-lock.json).
+
+Build the native SDK exercise with `cargo build --locked --features first-path --bin
+first-path`. Pass `--installation` with the installation repository's absolute path.
+The commands are:
+
+- `status`: authorize through verified TLS and generic OIDC.
+- `factory --image IMAGE`: create the initial factory/provider; `--replace` replaces
+  only the disposable first-path factory after an image rebuild.
+- `sync-factory`: update the native Lore provider and policy, waiting for supervisor
+  installation. The operator provisions the fifteen-minute read grant separately.
+- `lore --repository ID --forbidden ID`: read the assigned repository and reject an
+  existing unassigned repository through normal Lore commands.
+- `boundaries`: require the native placeholder, reject real-token exposure and
+  bootstrap/operator files, and deny raw TCP to public, identity and management
+  destinations.
+- `service --image IMAGE`: recreate the private fixture and check MCP initialization,
+  notification, discovery and echo over authenticated `ForwardTcp`. Missing app
+  credentials and an OIDC workspace nonmember must fail. `--reuse` only checks it.
+- `service-recreation --image IMAGE`: replace twice while a same-named default
+  workspace sentinel exists. Verify its ID is unchanged and remove only a sentinel
+  created by this check.
+
+These commands passed on macOS with Docker 29.8.2 and LinuxKit 7.0.14. Native gateway
+restart recovered the existing factory and private service; their Lore/MCP checks
+then passed. Token rotation installed through native provider receipts without a
+factory restart. The six focused supervisor regressions passed, including a
+cancellation reproduction that failed before the fix and now resets stalled
+upstream calls before and after response headers, beyond the relay slot limit.
+
+The factory runs with network mode `none`, all capabilities dropped, and only the
+native channel mount. Source and durable data were preserved during the hard cut.
+This evidence does not qualify general builds, environment composition, all real MCP
+components, durable infrastructure migration or Linux/CUDA. See the
+[execution record](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).

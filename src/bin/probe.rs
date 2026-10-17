@@ -95,6 +95,14 @@ enum Command {
         #[arg(long, default_value = "forbidden_tool")]
         denied_tool: String,
     },
+    /// Qualify verified native HTTPS service ingress and policy boundaries.
+    ServiceIngress {
+        #[arg(long)]
+        base: String,
+        /// Require the same origin to return 404 after endpoint deletion.
+        #[arg(long)]
+        deleted: bool,
+    },
     /// Fetch an HTTPS URL with the rustls-based client.
     Https {
         #[arg(long)]
@@ -151,6 +159,9 @@ async fn main() -> anyhow::Result<()> {
             allowed_tool,
             denied_tool,
         } => probes::mcp_policy(&base, &allowed_tool, &denied_tool).await?,
+        Command::ServiceIngress { base, deleted } => {
+            probes::service_ingress::run(&base, deleted).await?
+        }
         Command::Https { url } => probes::https(&url).await?,
         Command::GrpcWeb { base, method } => probes::grpc_web(&base, &method).await?,
     };

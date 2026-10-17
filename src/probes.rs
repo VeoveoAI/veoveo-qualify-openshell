@@ -102,3 +102,6 @@ pub async fn grpc_web(base: &str, method_path: &str) -> anyhow::Result<Value> {
         Err(error) => json!({"test": "grpc_web", "error": error.to_string()}),
     })
 }
+
+/// Native service-origin HTTPS and policy qualification from inside a sandbox.
+pub mod service_ingress;

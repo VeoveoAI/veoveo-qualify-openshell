@@ -467,3 +467,62 @@ pub fn write(policy: &Policy, path: &Path) -> anyhow::Result<()> {
     std::fs::write(path, serde_json::to_vec_pretty(policy)?)?;
     Ok(())
 }
+
+/// Only the exact native service origin, admitted executable and fixture paths.
+pub fn service_ingress(host: &str, port: u16) -> Policy {
+    Policy {
+        version: 1,
+        filesystem_policy: filesystem(&[]),
+        network_policies: BTreeMap::from([(
+            "service_ingress",
+            Rule {
+                endpoints: vec![Endpoint {
+                    host: host.to_owned().into(),
+                    port: Some(port),
+                    protocol: Some("rest"),
+                    enforcement: Some("enforce"),
+                    rules: vec![
+                        Allow {
+                            allow: RestMatch {
+                                method: "GET",
+                                path: "/healthz".into(),
+                            },
+                        },
+                        Allow {
+                            allow: RestMatch {
+                                method: "POST",
+                                path: "/first-mcp".into(),
+                            },
+                        },
+                    ],
+                    ..Default::default()
+                }],
+                binaries: binaries(&[PROBE]),
+            },
+        )]),
+    }
+}
+
+#[cfg(test)]
+mod service_ingress_tests {
+    use super::*;
+
+    #[test]
+    fn service_ingress_policy_has_only_the_exact_fixture_surface() {
+        let value =
+            serde_json::to_value(service_ingress("fixture.openshell.localhost", 17670)).unwrap();
+        let rules = value["network_policies"].as_object().unwrap();
+        assert_eq!(rules.len(), 1);
+        let ingress = &rules["service_ingress"];
+        assert_eq!(ingress["binaries"], serde_json::json!([{"path": PROBE}]));
+        assert_eq!(
+            ingress["endpoints"],
+            serde_json::json!([{
+                "host":"fixture.openshell.localhost", "port":17670,
+                "protocol":"rest", "enforcement":"enforce",
+                "rules":[{"allow":{"method":"GET","path":"/healthz"}},
+                    {"allow":{"method":"POST","path":"/first-mcp"}}]
+            }])
+        );
+    }
+}

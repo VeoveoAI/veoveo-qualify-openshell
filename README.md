@@ -99,8 +99,10 @@ Apache-2.0. See [LICENSE](LICENSE).
 
 ## Focused macOS Native Path
 
-The local installation uses stock OpenShell 0.1.4 plus the existing pinned
-supervisor HTTP/2/gRPC patch. It makes no inference calls. Build its native SDK
+The local installation selects maintained, revision-pinned OpenShell builds in its
+native setup. The earlier foundation qualified the supervisor HTTP/2/gRPC patch;
+the service-ingress action separately qualifies the reserved service namespace
+extension. These focused actions make no inference calls. Build the native SDK
 qualification with `cargo build --locked --features first-path --bin first-path`.
 Pass `--installation /absolute/path/to/veoveo-template-installation`.
 
@@ -190,3 +192,48 @@ Generated reports remain under the installation's `state/openshell/lore-direct/`
 current acceptance is in the [execution checklist](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).
 Entra/customer providers, interactive human Lore login,
 Linux/CUDA, general builds and composition remain separate qualifications.
+
+## Focused native HTTPS service ingress
+
+On the maintained OpenShell build that supports reserved local service DNS, run
+this fixture from the trusted operator environment, without model calls:
+
+```sh
+cargo build --locked --features first-path --bin first-path
+docker build -t veoveo/native-ingress-probe:local .
+cargo run --locked --features first-path --bin first-path -- \
+  --installation /absolute/path/to/veoveo-template-installation \
+  service-ingress --image sha256:<exact-probe-image-id>
+```
+
+Supply the probe image's immutable Docker image ID, not a mutable tag. The gateway
+must return HTTPS service origins, with loopback service HTTP disabled using
+`OPENSHELL_ENABLE_LOOPBACK_SERVICE_HTTP=false` or the corresponding gateway
+configuration. Its trusted supervisor HTTPS endpoint, backend IP and ingress port
+must satisfy the native routing contract. The workload uses its normally provisioned
+CA roots; the fixture adds no root override, resolver override or insecure TLS.
+
+The operator creates a fresh labelled workspace and two `vv-qual-<run>-s/c`
+sandboxes from that same image. A native named exposure uses `BearerPassthrough`;
+the server's `/first-mcp` endpoint requires only the public fixture token
+`fixture-app-token`. The client policy admits only its exact HTTPS origin/port,
+the probe executable, GET `/healthz` and POST `/first-mcp`.
+
+The probe requires health, MCP initialization, discovery and echo, plus explicit
+401 without the fixture token, refusal of an unlisted path, and rejection of
+mismatched HTTP host/port authorities. Separate wrong-name and wrong-port URL
+requests must be refused without counting a timeout as success. Only these negative
+authority tests supply a different Host header. The positive path always retains
+the returned URL, SNI and HTTP authority.
+
+The qualifier deletes the named exposure, requires 404 at its same origin,
+recreates it and repeats the checks from a fresh probe process and connection.
+It refuses pre-existing resources and checks run labels before cleanup, including
+uncertain create outcomes. Execution, HTTP bodies and command output are bounded.
+A successful JSON report records the exact probe image, origin and measured phases
+only after owned resources are cleaned up. A failure exits nonzero and reports
+cleanup failure separately when necessary; it does not manufacture a passing report.
+
+This action qualifies native service ingress only. It does not qualify Hub/Time,
+IdP application admission, gateway restart or credential renewal. Existing private
+`service`, `service-recreation` and Lore actions remain separate regressions.

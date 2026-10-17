@@ -17,6 +17,9 @@ use tokio_stream::wrappers::ReceiverStream;
 #[path = "../lore_direct.rs"]
 mod lore_direct;
 
+#[path = "../service_ingress_harness.rs"]
+mod service_ingress_harness;
+
 #[derive(Parser)]
 struct Args {
     #[arg(long)]
@@ -43,6 +46,11 @@ enum Action {
         replace: bool,
     },
     Boundaries,
+    /// Qualify sandbox HTTPS ingress through a native bearer-passthrough exposure.
+    ServiceIngress {
+        #[arg(long)]
+        image: String,
+    },
     ServiceRecreation {
         #[arg(long)]
         image: String,
@@ -317,6 +325,7 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let client = connect_as(&args.installation, "controller").await?;
     match args.command {
+        Action::ServiceIngress { image } => service_ingress_harness::run(&client, image).await?,
         Action::LoreNegative => lore_direct::negative_credentials(&args.installation).await?,
         Action::LorePreflight => lore_direct::preflight(&args.installation).await?,
         Action::LoreDirect { image, phase } => {

@@ -457,10 +457,19 @@ struct Owned {
     profiles: Vec<String>,
     providers: Vec<String>,
     sandboxes: Vec<String>,
+    client_change: Option<ClientEnabledChange>,
     #[cfg(test)]
     fail_after: Option<&'static str>,
 }
 impl Owned {
+    async fn restore_client(&self, root: &Path, config: &Config) -> anyhow::Result<()> {
+        if let Some(change) = &self.client_change {
+            // Cleanup may run after the short-lived admin token has expired.
+            let admin = ClientAdmin::connect(root, config, &change.role).await?;
+            change.restore(&admin).await?;
+        }
+        Ok(())
+    }
     fn checkpoint(&self, _stage: &str) -> anyhow::Result<()> {
         #[cfg(test)]
         ensure!(
@@ -555,7 +564,7 @@ struct Actor {
     name: String,
     provider: String,
     role: String,
-    pid: String,
+    launch_id: String,
     sandbox_id: String,
 }
 async fn exec(
@@ -694,7 +703,7 @@ async fn setup_actor_inner(
         name,
         provider,
         role: role.into(),
-        pid: String::new(),
+        launch_id: String::new(),
         sandbox_id: sandbox.id,
     };
     let ready = tokio::time::timeout(Duration::from_secs(30), async {
@@ -710,22 +719,64 @@ async fn setup_actor_inner(
         ready.ends_with("captured-once"),
         "reference-capturing workload did not start"
     );
-    actor.pid = ready;
+    // The file is only a readiness hint. A fresh reply identifies the live process.
+    let reply = command_reply(client, &actor, &mut 0, "ping").await?;
+    ensure!(
+        reply.ok && reply.text == "captured-once",
+        "workload handshake failed"
+    );
+    actor.launch_id = reply.launch_id;
     println!(
         "{} ready with native direct-IdP refresh and one captured reference",
         actor.name
     );
     Ok(actor)
 }
-async fn command(
+struct Reply {
+    ok: bool,
+    text: String,
+    launch_id: String,
+}
+fn parse_reply(id: &str, reply: &str) -> anyhow::Result<Option<Reply>> {
+    let Some((header, text)) = reply.split_once('\n') else {
+        return Ok(None);
+    };
+    let mut fields = header.split_whitespace();
+    if fields.next() != Some(id) {
+        return Ok(None);
+    }
+    let code = fields.next().context("reply status missing")?;
+    let launch_id = fields.next().context("reply launch marker missing")?;
+    ensure!(
+        matches!(code, "0" | "1") && fields.next().is_none(),
+        "invalid reply header"
+    );
+    ensure!(
+        launch_id.len() == 64 && launch_id.bytes().all(|b| b.is_ascii_hexdigit()),
+        "invalid launch marker"
+    );
+    Ok(Some(Reply {
+        ok: code == "0",
+        text: text.into(),
+        launch_id: launch_id.into(),
+    }))
+}
+async fn command_reply(
     client: &OpenShellClient,
     actor: &Actor,
     sequence: &mut u32,
     action: &str,
-) -> anyhow::Result<(bool, String)> {
+) -> anyhow::Result<Reply> {
     *sequence += 1;
     ensure!(*sequence <= 256, "command-count bound exceeded");
-    let id = format!("{:06}", *sequence);
+    // Setup handshakes and the main workflow have separate sequence counters.
+    // Never let either consume a persisted reply from the other.
+    static NEXT_REQUEST: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let id = format!(
+        "{:06}-{}",
+        *sequence,
+        NEXT_REQUEST.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    );
     exec(
         client,
         actor,
@@ -742,18 +793,26 @@ async fn command(
                 None,
             )
             .await?;
-            if let Some((header, text)) = reply.split_once('\n') {
-                if header == format!("{id} 0") {
-                    return Ok((true, text.into()));
-                }
-                if header == format!("{id} 1") {
-                    return Ok((false, text.into()));
-                }
+            if let Some(reply) = parse_reply(&id, &reply)? {
+                return Ok(reply);
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
     })
     .await?
+}
+async fn command(
+    client: &OpenShellClient,
+    actor: &Actor,
+    sequence: &mut u32,
+    action: &str,
+) -> anyhow::Result<(bool, String)> {
+    let reply = command_reply(client, actor, sequence, action).await?;
+    ensure!(
+        reply.launch_id == actor.launch_id,
+        "capturing workload restarted"
+    );
+    Ok((reply.ok, reply.text))
 }
 async fn succeeds(
     client: &OpenShellClient,
@@ -778,11 +837,12 @@ async fn denied(
 fn refresh_json(status: &p::ProviderCredentialRefreshStatus) -> serde_json::Value {
     serde_json::json!({"at":now(),"status":status.status,"lastRefresh":status.last_refresh_time.as_ref().map(|t|t.seconds),"expiration":status.expiration_time.as_ref().map(|t|t.seconds),"nextRefresh":status.next_refresh_time.as_ref().map(|t|t.seconds),"failureCode":status.failure_code,"recoveryAction":status.recovery_action})
 }
-async fn unchanged(client: &OpenShellClient, actor: &Actor) -> anyhow::Result<()> {
-    ensure!(
-        exec(client, actor, "cat /sandbox/ready", None).await? == actor.pid,
-        "capturing workload restarted"
-    );
+async fn unchanged(
+    client: &OpenShellClient,
+    actor: &Actor,
+    sequence: &mut u32,
+) -> anyhow::Result<()> {
+    succeeds(client, actor, sequence, "ping").await?;
     ensure!(
         client
             .workspace(WORKSPACE)
@@ -835,49 +895,105 @@ async fn subscribe(
     .await??;
     Ok(())
 }
-async fn set_enabled(
-    root: &Path,
-    config: &Config,
+struct ClientAdmin {
+    http: reqwest::Client,
+    url: String,
+    token: String,
+}
+struct ClientEnabledChange {
+    role: String,
+    previous: bool,
+}
+impl ClientEnabledChange {
+    async fn restore(&self, admin: &ClientAdmin) -> anyhow::Result<()> {
+        admin.set_enabled(self.previous).await
+    }
+}
+impl ClientAdmin {
+    async fn connect(root: &Path, config: &Config, role: &str) -> anyhow::Result<Self> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Admin {
+            admin_username: String,
+            admin_password: String,
+        }
+        let admin: Admin = serde_json::from_slice(&std::fs::read(
+            root.join("state/identity/credentials.json"),
+        )?)?;
+        let http = http(root)?;
+        let origin = reqwest::Url::parse(&config.issuer)?
+            .origin()
+            .ascii_serialization();
+        let token: TokenReply = http
+            .post(format!(
+                "{origin}/realms/master/protocol/openid-connect/token"
+            ))
+            .form(&[
+                ("grant_type", "password"),
+                ("client_id", "admin-cli"),
+                ("username", &admin.admin_username),
+                ("password", &admin.admin_password),
+            ])
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(Self {
+            http,
+            url: format!(
+                "{origin}/admin/realms/veoveo/clients/{}",
+                config.clients[role].client_key
+            ),
+            token: token.access_token,
+        })
+    }
+    async fn enabled(&self) -> anyhow::Result<bool> {
+        #[derive(Deserialize)]
+        struct ClientState {
+            enabled: bool,
+        }
+        let state: ClientState = self
+            .http
+            .get(&self.url)
+            .bearer_auth(&self.token)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(state.enabled)
+    }
+    async fn set_enabled(&self, enabled: bool) -> anyhow::Result<()> {
+        self.http
+            .put(&self.url)
+            .bearer_auth(&self.token)
+            .json(&serde_json::json!({"enabled":enabled}))
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+}
+async fn change_client_enabled(
+    owned: &mut Owned,
     role: &str,
+    admin: &ClientAdmin,
     enabled: bool,
 ) -> anyhow::Result<()> {
-    #[derive(Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct Admin {
-        admin_username: String,
-        admin_password: String,
+    ensure!(
+        owned.client_change.is_none(),
+        "fixture client already changed by this run"
+    );
+    let previous = admin.enabled().await?;
+    if previous != enabled {
+        // Record before PUT: a timeout may arrive after the IdP applied the update.
+        owned.client_change = Some(ClientEnabledChange {
+            role: role.into(),
+            previous,
+        });
+        admin.set_enabled(enabled).await?;
     }
-    let admin: Admin = serde_json::from_slice(&std::fs::read(
-        root.join("state/identity/credentials.json"),
-    )?)?;
-    let http = http(root)?;
-    let origin = reqwest::Url::parse(&config.issuer)?
-        .origin()
-        .ascii_serialization();
-    let token: TokenReply = http
-        .post(format!(
-            "{origin}/realms/master/protocol/openid-connect/token"
-        ))
-        .form(&[
-            ("grant_type", "password"),
-            ("client_id", "admin-cli"),
-            ("username", &admin.admin_username),
-            ("password", &admin.admin_password),
-        ])
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-    http.put(format!(
-        "{origin}/admin/realms/veoveo/clients/{}",
-        config.clients[role].client_key
-    ))
-    .bearer_auth(token.access_token)
-    .json(&serde_json::json!({"enabled":enabled}))
-    .send()
-    .await?
-    .error_for_status()?;
     Ok(())
 }
 async fn stop(client: &OpenShellClient, actor: &Actor) -> anyhow::Result<()> {
@@ -948,12 +1064,12 @@ pub async fn run(
         println!("Direct-issuer normal Lore workflow passed, including hook, native protection and ordinary human push");
         if phase=="workflow" {return Ok::<_,anyhow::Error>(());}
         let b=setup_actor(client,&config,&image,"b",&mut owned).await?;
-        lifecycle(client,root,&config,&image,&a,&b,&mut owned,&mut sequence,&mut evidence,phase=="remaining").await?;
+        lifecycle(client,root,&config,&image,&a,&b,&mut owned,&mut sequence,&mut evidence,phase).await?;
         Ok(())
     }).await;
     let cleaned = owned.cleanup(client).await;
-    // Restore only the fixture client we disabled, even on failed assertions.
-    let restored = set_enabled(root, &config, "a", true).await;
+    // No IdP requests for recovery/workflow or a failure before we changed a client.
+    let restored = owned.restore_client(root, &config).await;
     if let Err(error) = cleaned {
         return Err(error.context(format!("qualification outcome: {outcome:?}")));
     }
@@ -971,9 +1087,10 @@ async fn observe_event(
     client: &OpenShellClient,
     actor: &Actor,
     before: usize,
+    sequence: &mut u32,
 ) -> anyhow::Result<bool> {
     let observed = wait_events(client, actor, before).await;
-    unchanged(client, actor).await?;
+    unchanged(client, actor, sequence).await?;
     Ok(observed.is_ok())
 }
 async fn native_detach(
@@ -1070,9 +1187,9 @@ async fn lifecycle(
     owned: &mut Owned,
     sequence: &mut u32,
     evidence: &mut serde_json::Value,
-    skip_renewal: bool,
+    phase: &str,
 ) -> anyhow::Result<()> {
-    if !skip_renewal {
+    if phase != "remaining" {
         let initial = status(client, WORKSPACE, &a.provider).await?;
         let original_exp = initial
             .expiration_time
@@ -1116,8 +1233,8 @@ async fn lifecycle(
             Ok::<_, anyhow::Error>(())
         })
         .await??;
-        unchanged(client, a).await?;
-        unchanged(client, b).await?;
+        unchanged(client, a, sequence).await?;
+        unchanged(client, b, sequence).await?;
         succeeds(client, a, sequence, "push").await?;
         denied(client, a, sequence, "forbidden").await?;
         let rejected = denied(client, a, sequence, "wrong").await?;
@@ -1125,13 +1242,16 @@ async fn lifecycle(
             rejected.contains(&config.fixture.assigned) && rejected.contains(&config.fixture.other),
             "renewed wrong-branch hook message missing: {rejected}"
         );
-        evidence["automaticRenewal"] = serde_json::json!({"observations":observations,"automaticRefreshCount":refreshes.len(),"originalExpiryBound":original_exp,"postExpiryReconnectAt":now(),"verifierLeewaySeconds":config.verifier_leeway_seconds,"capturingProcessUnchanged":true,"originalReferenceRetained":true,"freshCliConnections":true,"subjectAndRepoAuthorityUnchanged":true});
+        evidence["automaticRenewal"] = serde_json::json!({"observations":observations,"automaticRefreshCount":refreshes.len(),"originalExpiryBound":original_exp,"postExpiryReconnectAt":now(),"verifierLeewaySeconds":config.verifier_leeway_seconds,"capturingProcessUnchanged":true,"processEvidence":{"method":"unique per-launch marker checked in fresh command replies","a":a.launch_id,"b":b.launch_id},"originalReferenceRetained":true,"freshCliConnections":true,"subjectAndRepoAuthorityUnchanged":true});
         save(root, "progress", evidence)?;
         println!(
             "Renewal passed across original expiry plus leeway, with at least two native renewals and unchanged process/reference"
         );
 
         save(root, "renewal-result", evidence)?;
+    }
+    if phase == "renewal" {
+        return Ok(());
     }
     subscribe(client, a, sequence).await?;
     succeeds(client, b, sequence, "push").await?;
@@ -1145,9 +1265,10 @@ async fn lifecycle(
         + 1
         + config.verifier_leeway_seconds;
     let disabled = now();
-    set_enabled(root, config, &a.role, false).await?;
+    let admin = ClientAdmin::connect(root, config, &a.role).await?;
+    change_client_enabled(owned, &a.role, &admin, false).await?;
     succeeds(client, b, sequence, "push").await?;
-    let event_after_disable = observe_event(client, a, before).await?;
+    let event_after_disable = observe_event(client, a, before, sequence).await?;
     let mut first_denial = None;
     let mut failure = None;
     let b_initial = status(client, WORKSPACE, &b.provider)
@@ -1204,7 +1325,7 @@ async fn lifecycle(
         .filter(|line| line.starts_with("Branch pushed by "))
         .count();
     succeeds(client, b, sequence, "push").await?;
-    let event_after_expiry = observe_event(client, a, before_expiry).await?;
+    let event_after_expiry = observe_event(client, a, before_expiry, sequence).await?;
     stop(client, a).await?;
     let stopped = now();
     succeeds(client, b, sequence, "push").await?;
@@ -1223,13 +1344,13 @@ async fn lifecycle(
     let before = wait_events(client, &detached, 0).await?;
     let receipt = native_detach(client, &detached).await?;
     denied(client, &detached, sequence, "read").await?;
-    unchanged(client, &detached).await?;
+    unchanged(client, &detached, sequence).await?;
     succeeds(client, b, sequence, "push").await?;
-    let event_after = observe_event(client, &detached, before).await?;
+    let event_after = observe_event(client, &detached, before, sequence).await?;
     stop(client, &detached).await?;
     succeeds(client, b, sequence, "push").await?;
     succeeds(client, b, sequence, "read").await?;
-    evidence["appliedDetach"] = serde_json::json!({"receipt":receipt,"IdpClientEnabled":true,"capturedReferenceRejected":true,"capturingProcessUnchangedUntilStop":true,"eventAfterBindingRemovalAndDetach":event_after,"nativeStopAt":now(),"noExecutionAfterStop":true,"BRemainedOperational":true});
+    evidence["appliedDetach"] = serde_json::json!({"receipt":receipt,"IdpClientEnabled":true,"capturedReferenceRejected":true,"capturingProcessUnchangedUntilStop":true,"processEvidence":{"method":"unique per-launch marker checked in fresh command replies","launchId":detached.launch_id},"eventAfterBindingRemovalAndDetach":event_after,"nativeStopAt":now(),"noExecutionAfterStop":true,"BRemainedOperational":true});
     save(root, "detach-result", evidence)?;
     save(root, "progress", evidence)?;
     println!(
@@ -1467,8 +1588,6 @@ async fn recovery(
         }
     })
     .await?;
-    let mut recovered = actor.clone();
-    recovered.pid = exec(&reconnected, actor, "cat /sandbox/ready", None).await?;
     ensure!(
         reconnected
             .workspace(WORKSPACE)
@@ -1480,10 +1599,11 @@ async fn recovery(
     );
     tokio::time::timeout(Duration::from_secs(300),async {loop {
         // A fresh command reply proves the recovered canonical workload is active.
-        if succeeds(&reconnected,&recovered,sequence,"read").await.is_ok() {
+        if let Ok(reply) = command_reply(&reconnected,actor,sequence,"read").await
+            && reply.ok {
             let current=status(&reconnected,WORKSPACE,&actor.provider).await?;
             if current.last_refresh_time.as_ref().is_some_and(|t|t.seconds>before) {
-                evidence["gatewayRecovery"]=serde_json::json!({"restartedAt":restarted,"measuredAt":now(),"sameSandboxIdentity":true,"workloadRestartPolicy":"OnFailure","capturingProcessRestarted":recovered.pid!=actor.pid,"storedRefreshRenewedAfterRestart":refresh_json(&current),"noProviderReconfigurationOrManualRotationAfterRestart":true});
+                evidence["gatewayRecovery"]=serde_json::json!({"restartedAt":restarted,"measuredAt":now(),"sameSandboxIdentity":true,"workloadRestartPolicy":"OnFailure","capturingProcessRestarted":reply.launch_id!=actor.launch_id,"processEvidence":{"method":"unique per-launch marker from fresh command reply","before":actor.launch_id,"after":reply.launch_id},"storedRefreshRenewedAfterRestart":refresh_json(&current),"noProviderReconfigurationOrManualRotationAfterRestart":true});
                 save(root,"progress",evidence)?;println!("Native gateway recovery passed: same sandbox identity, active recovered workload and stored automatic refresh");return Ok::<_,anyhow::Error>(());
             }
         }
@@ -1494,6 +1614,155 @@ async fn recovery(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn replies_require_a_fresh_request_and_unique_launch_marker() -> anyhow::Result<()> {
+        let old = "a".repeat(64);
+        let new = "b".repeat(64);
+        assert!(parse_reply("next", &format!("previous 0 {old}\nstale"))?.is_none());
+        // PID-only evidence from the former fixture must fail, not silently qualify.
+        assert!(parse_reply("next", "next 0\nold PID-only fixture").is_err());
+        let reply = parse_reply("next", &format!("next 0 {new}\nactive"))?.unwrap();
+        assert!(reply.ok);
+        assert_eq!(reply.text, "active");
+        assert_ne!(reply.launch_id, old);
+        assert!(parse_reply("next", "next 0 42\nPID reused").is_err());
+        Ok(())
+    }
+    #[tokio::test]
+    async fn client_cleanup_restores_only_the_runs_changes() -> anyhow::Result<()> {
+        use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
+        use std::sync::{Arc, Mutex};
+        #[derive(Default)]
+        struct StateData {
+            enabled: bool,
+            writes: Vec<bool>,
+            fail_after_apply: bool,
+        }
+        type Shared = Arc<Mutex<StateData>>;
+        async fn read(State(state): State<Shared>) -> Json<serde_json::Value> {
+            Json(serde_json::json!({"enabled":state.lock().unwrap().enabled}))
+        }
+        async fn write(
+            State(state): State<Shared>,
+            Json(body): Json<serde_json::Value>,
+        ) -> StatusCode {
+            let enabled = body["enabled"].as_bool().unwrap();
+            let mut state = state.lock().unwrap();
+            state.enabled = enabled;
+            state.writes.push(enabled);
+            if std::mem::take(&mut state.fail_after_apply) {
+                StatusCode::INTERNAL_SERVER_ERROR
+            } else {
+                StatusCode::NO_CONTENT
+            }
+        }
+        let shared = Shared::default();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let admin = ClientAdmin {
+            http: reqwest::Client::new(),
+            url: format!("http://{}/client", listener.local_addr()?),
+            token: "test".into(),
+        };
+        let app = Router::new()
+            .route("/client", get(read).put(write))
+            .with_state(shared.clone());
+        let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        for (previous, enabled, failed) in [
+            (true, false, false),
+            (false, true, false),
+            (false, false, false),
+            (true, true, false),
+            (true, false, true),
+        ] {
+            *shared.lock().unwrap() = StateData {
+                enabled: previous,
+                fail_after_apply: failed,
+                ..Default::default()
+            };
+            let mut owned = Owned::default();
+            let result = change_client_enabled(&mut owned, "a", &admin, enabled).await;
+            assert_eq!(result.is_err(), failed);
+            if let Some(change) = &owned.client_change {
+                assert_ne!(previous, enabled);
+                assert_eq!(change.role, "a");
+                change.restore(&admin).await?;
+            }
+            let state = shared.lock().unwrap();
+            assert_eq!(state.enabled, previous);
+            assert_eq!(
+                state.writes,
+                if previous == enabled {
+                    vec![]
+                } else {
+                    vec![enabled, previous]
+                }
+            );
+        }
+        // Workflow/recovery and setup failure have no client mutation to restore.
+        // This must not even read an admin credential file or contact the IdP.
+        let config: Config = serde_json::from_value(serde_json::json!({
+            "issuer":"unused","audience":"unused","tokenUrl":"unused","clients":{},
+            "fixture":{"repository":"","assigned":"","other":"","main":"","forbidden":""},
+            "tokenLifetimeSeconds":300,"refreshBeforeSeconds":180,"verifierLeewaySeconds":60
+        }))?;
+        Owned::default()
+            .restore_client(Path::new("/missing-operator-state"), &config)
+            .await?;
+        server.abort();
+        Ok(())
+    }
+    #[tokio::test]
+    #[ignore = "restarts the local native gateway; requires direct OIDC installation; no inference"]
+    async fn direct_recovery_preserves_disabled_fixture_client() -> anyhow::Result<()> {
+        let root = std::path::PathBuf::from(std::env::var("VV_INSTALLATION")?);
+        let image = std::env::var("VV_FACTORY_IMAGE")?;
+        let config = load(&root)?;
+        let client = super::super::connect_as(&root, "controller").await?;
+        ensure!(
+            matches!(
+                client.get_workspace(WORKSPACE).await,
+                Err(openshell_sdk::SdkError::NotFound { .. })
+            ),
+            "recovery test workspace pre-exists; untouched"
+        );
+        let admin = ClientAdmin::connect(&root, &config, "a").await?;
+        let previous = admin.enabled().await?;
+        let mut changed = Owned::default();
+        let result = async {
+            change_client_enabled(&mut changed, "a", &admin, false).await?;
+            run(&client, &root, image, "recovery").await?;
+            ensure!(
+                !ClientAdmin::connect(&root, &config, "a")
+                    .await?
+                    .enabled()
+                    .await?,
+                "recovery cleanup enabled fixture A"
+            );
+            Ok::<_, anyhow::Error>(())
+        }
+        .await;
+        // Restore only the outer test's own mutation, including on failed assertions.
+        let restored = changed.restore_client(&root, &config).await;
+        result?;
+        restored?;
+        ensure!(
+            ClientAdmin::connect(&root, &config, "a")
+                .await?
+                .enabled()
+                .await?
+                == previous,
+            "fixture A's original state not restored"
+        );
+        save(
+            &root,
+            "recovery-client-state-result",
+            &serde_json::json!({
+                "at":now(), "fixtureAEnabledBeforeRecovery":false, "fixtureAEnabledAfterRecovery":false,
+                "outerTestOriginalEnabled":previous,"outerTestRestoredOriginal":true
+            }),
+        )?;
+        Ok(())
+    }
     #[tokio::test]
     #[ignore = "requires the local direct OIDC installation; no inference"]
     async fn direct_partial_setup_cleanup_and_existing_workspace() -> anyhow::Result<()> {

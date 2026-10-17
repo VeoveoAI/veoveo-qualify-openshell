@@ -142,11 +142,16 @@ docker build -f LoreDirect.Dockerfile \
 It captures the native reference once per process and executes ordinary Lore commands.
 Renewal requires at least two native automatic refreshes, unchanged process/reference,
 real operations and fresh connections after original expiry plus verifier leeway.
+Each launch generates a random 256-bit marker. Every fresh command reply includes
+that marker; a persisted readiness file is only a setup hint. Recovery records the
+marker from an answered post-restart command and allows native workload replacement.
+Earlier PID-only records cannot establish uninterrupted process lifetime.
 Every wrong-branch attempt clones the current target branch and commits before pushing.
 Protected branches and identities without a factory assignment retain native behavior.
 This is a normal-push workflow guard, not complete low-level branch isolation.
 
-`--phase workflow`, `--phase remaining`, and `--phase recovery` select focused checks.
+`--phase workflow`, `--phase renewal`, `--phase remaining`, and `--phase recovery`
+select the same individual gates without rerunning unrelated timers.
 A phase report contains only gates actually measured; running `remaining` does not
 qualify renewal. The local acceptance record combines completed renewal evidence with
 separate remaining-gate evidence, retaining exact images and timestamps. Timed-out runs
@@ -161,6 +166,9 @@ only A's IdP client tests unavailable issuance while B operates/renews. Real not
 streams must receive branch events before withdrawal. Measure events afterward, then
 require native stopped state and execution rejection. No Lore transport/expiry changes
 are permitted to manufacture a passing result.
+The run reads the client's previous enabled value and records a restoration only
+when it changes that value. Workflow/recovery and failures before mutation do not
+contact the IdP during cleanup. Restoration also covers an uncertain PUT outcome.
 
 The focused cleanup regression uses its own workspace and the enabled protected
 fixture identity, independent of the lifecycle actors:
@@ -174,6 +182,9 @@ cargo test --locked --features first-path --bin first-path \
 
 It injects failures after workspace, profile, provider and sandbox admission and
 preserves a labelled pre-existing workspace. Source and durable data are preserved.
+The separate ignored `direct_recovery_preserves_disabled_fixture_client` test uses
+the same environment variables. It starts recovery with A disabled, verifies A is
+still disabled afterward, then restores only the outer test's own state change.
 Exact revisions/images and sanitized results are in the installation's
 [component lock](../veoveo-template-installation/openshell/component-lock.json) and
 [execution record](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).

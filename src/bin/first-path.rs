@@ -34,7 +34,7 @@ enum Action {
     LoreDirect {
         #[arg(long)]
         image: String,
-        #[arg(long, default_value="all", value_parser=["all","remaining","workflow","recovery"])]
+        #[arg(long, default_value="all", value_parser=["all","remaining","workflow","renewal","recovery"])]
         phase: String,
     },
     Status,

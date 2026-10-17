@@ -424,13 +424,16 @@ printf 'boundary-checks-passed\n'
                     .all(|id| id.len() == 32 && id.bytes().all(|c| c.is_ascii_hexdigit())),
                 "invalid repository identifier"
             );
+            let identity = lore_direct::load(&args.installation)?.clients["smoke"]
+                .subject
+                .clone();
             let command = |id: &str| {
                 vec!["/bin/sh".into(),"-c".into(),
-                "exec lore -P --identity factory --access-token \"$LORE_AUTH_TOKEN\" repository info \"$1\"".into(),"sh".into(),
-                format!("{}/{id}", bootstrap.lore_endpoint.trim_end_matches('/'))]
+                "exec lore -P --identity \"$2\" --access-token \"$LORE_AUTH_TOKEN\" repository info \"$1\"".into(),"sh".into(),
+                format!("{}/{id}", bootstrap.lore_endpoint.trim_end_matches('/')),identity.clone()]
             };
             let options = || ExecOptions {
-                timeout: Some(Duration::from_secs(30)),
+                timeout: Some(Duration::from_secs(20)),
                 no_login_shell: true,
                 ..Default::default()
             };

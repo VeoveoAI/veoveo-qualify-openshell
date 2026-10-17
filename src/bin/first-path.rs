@@ -45,7 +45,6 @@ enum Action {
         #[arg(long)]
         replace: bool,
     },
-    SyncFactory,
     Boundaries,
     ServiceRecreation {
         #[arg(long)]
@@ -84,9 +83,6 @@ struct Bootstrap {
     lore_endpoint: String,
 }
 
-async fn sync_factory(client: &OpenShellClient, root: &std::path::Path) -> anyhow::Result<()> {
-    lore_direct::sync_smoke(client, root).await
-}
 struct Issuer {
     http: reqwest::Client,
     config: Controller,
@@ -339,7 +335,6 @@ async fn main() -> anyhow::Result<()> {
         Action::Factory { image, replace } => {
             lore_direct::create_smoke(&client, &args.installation, image, replace).await?
         }
-        Action::SyncFactory => sync_factory(&client, &args.installation).await?,
         Action::Boundaries => {
             let script = r#"case "$LORE_AUTH_TOKEN" in openshell:resolve:*) ;; *) exit 90;; esac
 for p in /var/run/docker.sock /etc/veoveo/signing.key /secrets/signing.key /gateway/state/gateway /Users/rozgo/.config/openshell; do

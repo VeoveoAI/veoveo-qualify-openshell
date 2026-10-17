@@ -442,15 +442,6 @@ pub async fn create_smoke(
     println!("Native direct-IdP smoke factory ready; RPC policy remains read-only");
     Ok(())
 }
-pub async fn sync_smoke(client: &OpenShellClient, root: &Path) -> anyhow::Result<()> {
-    let lock: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(root.join("openshell/component-lock.json"))?)?;
-    let image = lock["localValidation"]["images"]["veoveo/factory:local"]
-        .as_str()
-        .context("pinned factory image missing")?;
-    create_smoke(client, root, image.into(), true).await
-}
-
 #[derive(Default)]
 struct Owned {
     workspace: bool,

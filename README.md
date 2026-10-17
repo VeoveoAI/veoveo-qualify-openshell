@@ -112,8 +112,8 @@ token service, refresh daemon, manual signing helper or Desktop adapter.
 - `lore-preflight`: verify signatures/type/subject/audience, bounded claims/expiry,
   and omitted/unlinked optional scope denial without storing token bytes.
 - `factory --image IMAGE`: create the native smoke factory/provider. `--replace`
-  explicitly replaces that disposable factory. `sync-factory` provisions it from
-  the locked image. These are setup actions, not automatic-renewal evidence.
+  explicitly replaces that disposable factory. Provisioning is a setup action,
+  not automatic-renewal evidence.
 - `lore --repository ID --forbidden ID`: use normal Lore commands through the
   read-only smoke policy; require an existing ungranted repository to fail.
 - `boundaries`: require a native opaque reference, reject IdP secrets/JWTs in the
@@ -123,15 +123,14 @@ token service, refresh daemon, manual signing helper or Desktop adapter.
   removal/applied detach, termination and gateway recovery. It refuses pre-existing
   workspaces and cleans up only this run's admitted resources, including partial setup.
 - `lore-negative`: use trusted HTTP/2 operator probes to compare valid direct grants
-  with management bearers. The optional legacy-token input is a historical cutover
-  check using the public recovery JWKS; it does not require an active signer.
+  with management bearers.
 - `service --image IMAGE --reuse`: check private MCP initialization/discovery/echo,
   missing application credentials and OIDC workspace-nonmember denial through native
   `ForwardTcp`. `service-recreation --image IMAGE` checks scoped deletion and preserves
   a same-named default-workspace sentinel.
 
 The std-only canonical workload is `src/fixtures/lore_session.rs`. Build its test
-image from the locked accepted factory (no secrets in the context):
+image from the factory you built (no secrets in the context):
 
 ```sh
 docker build -f LoreDirect.Dockerfile \
@@ -185,9 +184,9 @@ preserves a labelled pre-existing workspace. Source and durable data are preserv
 The separate ignored `direct_recovery_preserves_disabled_fixture_client` test uses
 the same environment variables. It starts recovery with A disabled, verifies A is
 still disabled afterward, then restores only the outer test's own state change.
-Exact revisions/images and sanitized results are in the installation's
-[component lock](../veoveo-template-installation/openshell/component-lock.json) and
-[execution record](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).
-Earlier signer/rotation smoke results remain historical evidence, distinct from the
-new direct-issuer gates. Entra/customer providers, interactive human Lore login,
+Build the patched sources using the installation's
+[build instructions](../veoveo-template-installation/openshell/README.md#build-and-provision).
+Generated reports remain under the installation's `state/openshell/lore-direct/`;
+current acceptance is in the [execution checklist](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).
+Entra/customer providers, interactive human Lore login,
 Linux/CUDA, general builds and composition remain separate qualifications.

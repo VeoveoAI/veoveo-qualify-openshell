@@ -33,6 +33,10 @@ enum Action {
     },
     SyncFactory,
     Boundaries,
+    ServiceRecreation {
+        #[arg(long)]
+        image: String,
+    },
     Lore {
         #[arg(long)]
         repository: String,
@@ -311,6 +315,46 @@ async fn request(client: &OpenShellClient, bytes: Vec<u8>) -> anyhow::Result<Vec
     Ok(output)
 }
 
+async fn recreate_service(
+    client: &OpenShellClient,
+    image: String,
+    policy: &str,
+) -> anyhow::Result<()> {
+    const WORKSPACE: &str = "vv-first-private";
+    match client.get_workspace(WORKSPACE).await {
+        Ok(_) => {}
+        Err(openshell_sdk::SdkError::NotFound { .. }) => {
+            client.create_workspace(WORKSPACE, HashMap::new()).await?;
+        }
+        Err(error) => return Err(error.into()),
+    }
+    let service_client = client.workspace(WORKSPACE);
+    let old = service_client
+        .delete_sandbox(
+            "vv-first-mcp",
+            openshell_sdk::DeleteOptions {
+                allow_missing: true,
+            },
+        )
+        .await?;
+    if let Some(id) = old.sandbox_id {
+        service_client
+            .wait_deleted("vv-first-mcp", Duration::from_secs(30), Some(&id))
+            .await?;
+    }
+    create(
+        client,
+        "vv-first-mcp",
+        WORKSPACE,
+        image,
+        policy,
+        vec![],
+        vec!["/usr/local/bin/probe".into(), "serve".into()],
+    )
+    .await?;
+    Ok(())
+}
+
 fn response_json(reply: &[u8]) -> anyhow::Result<serde_json::Value> {
     ensure!(
         reply.starts_with(b"HTTP/1.1 200"),
@@ -519,40 +563,53 @@ printf 'boundary-checks-passed\n'
             );
             println!("{}", String::from_utf8_lossy(&allowed.stdout));
         }
-        Action::Service { image, reuse } => {
-            const WORKSPACE: &str = "vv-first-private";
+        Action::ServiceRecreation { image } => {
             let policy = std::fs::read_to_string(args.installation.join("openshell/service.yaml"))?;
-            if !reuse {
-                match client.get_workspace(WORKSPACE).await {
-                    Ok(_) => {}
-                    Err(openshell_sdk::SdkError::NotFound { .. }) => {
-                        client.create_workspace(WORKSPACE, HashMap::new()).await?;
-                    }
-                    Err(error) => return Err(error.into()),
-                }
-                let old = client
-                    .delete_sandbox(
-                        "vv-first-mcp",
-                        openshell_sdk::DeleteOptions {
-                            allow_missing: true,
-                        },
-                    )
-                    .await?;
-                if let Some(id) = old.sandbox_id {
-                    client
-                        .wait_deleted("vv-first-mcp", Duration::from_secs(30), Some(&id))
-                        .await?;
-                }
+            let existing = match client.get_sandbox("vv-first-mcp").await {
+                Ok(sandbox) => Some(sandbox.id),
+                Err(openshell_sdk::SdkError::NotFound { .. }) => None,
+                Err(error) => return Err(error.into()),
+            };
+            if existing.is_none() {
                 create(
                     &client,
                     "vv-first-mcp",
-                    WORKSPACE,
-                    image,
+                    "default",
+                    image.clone(),
                     &policy,
                     vec![],
                     vec!["/usr/local/bin/probe".into(), "serve".into()],
                 )
                 .await?;
+            }
+            let sentinel = client.get_sandbox("vv-first-mcp").await?.id;
+            for _ in 0..2 {
+                recreate_service(&client, image.clone(), &policy).await?;
+                ensure!(
+                    client.get_sandbox("vv-first-mcp").await?.id == sentinel,
+                    "private recreation modified the default-workspace sandbox"
+                );
+            }
+            if existing.is_none() {
+                let deleted = client
+                    .delete_sandbox("vv-first-mcp", Default::default())
+                    .await?;
+                client
+                    .wait_deleted(
+                        "vv-first-mcp",
+                        Duration::from_secs(30),
+                        deleted.sandbox_id.as_deref(),
+                    )
+                    .await?;
+            }
+            println!(
+                "Two private service recreations preserved the same-named default-workspace sandbox; test-owned sentinel cleaned up"
+            );
+        }
+        Action::Service { image, reuse } => {
+            let policy = std::fs::read_to_string(args.installation.join("openshell/service.yaml"))?;
+            if !reuse {
+                recreate_service(&client, image, &policy).await?;
             }
             let health = request(
                 &client,

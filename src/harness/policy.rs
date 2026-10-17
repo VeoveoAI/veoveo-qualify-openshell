@@ -34,6 +34,8 @@ struct Binary {
 #[derive(Serialize, Default)]
 struct Endpoint {
     host: Cow<'static, str>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    allowed_ips: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     port: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -127,6 +129,59 @@ pub fn server() -> Policy {
         version: 1,
         filesystem_policy: filesystem(&[]),
         network_policies: BTreeMap::new(),
+    }
+}
+
+/// Only ordinary Lore clone/push operations. The hook is a normal-push guard,
+/// not a complete branch-isolation test against raw mutable storage APIs.
+pub fn factory_hook(provider: &str) -> Policy {
+    let paths = [
+        "/lore.environment.v1.EnvironmentService/EnvironmentGet",
+        "/urc.rpc.EnvironmentService/Get",
+        "/lore.repository.v1.RepositoryService/RepositoryGet",
+        "/lore.repository.v1.RepositoryService/RepositoryMetadataGet",
+        "/lore.revision.v1.RevisionService/BranchGet",
+        "/lore.revision.v1.RevisionService/BranchList",
+        "/lore.revision.v1.RevisionService/BranchMetadataGet",
+        "/lore.revision.v1.RevisionService/RevisionList",
+        "/lore.revision.v1.RevisionService/BranchPush",
+        "/urc.rpc.RevisionService/BranchPush",
+        "/lore.storage.v1.StorageService/Get",
+        "/lore.storage.v1.StorageService/GetMetadata",
+        "/lore.storage.v1.StorageService/GetResolved",
+        "/lore.storage.v1.StorageService/Query",
+        "/lore.storage.v1.StorageService/MutableLoad",
+        "/lore.storage.v1.StorageService/Put",
+    ];
+    Policy {
+        version: 1,
+        filesystem_policy: filesystem(&["/sandbox"]),
+        network_policies: BTreeMap::from([(
+            "lore",
+            Rule {
+                endpoints: vec![Endpoint {
+                    host: "10.231.10.10".into(),
+                    allowed_ips: vec!["10.231.10.10".into()],
+                    port: Some(41337),
+                    protocol: Some("rest"),
+                    enforcement: Some("enforce"),
+                    credential_binding: Some(CredentialBinding {
+                        provider: provider.into(),
+                    }),
+                    rules: paths
+                        .into_iter()
+                        .map(|path| Allow {
+                            allow: RestMatch {
+                                method: "POST",
+                                path: path.into(),
+                            },
+                        })
+                        .collect(),
+                    ..Default::default()
+                }],
+                binaries: binaries(&["/usr/local/bin/lore"]),
+            },
+        )]),
     }
 }
 

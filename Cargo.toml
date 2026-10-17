@@ -21,6 +21,7 @@ path = "src/bin/first-path.rs"
 required-features = ["first-path"]
 
 [dependencies]
+base64 = "=0.23.1"
 anyhow = "=1.0.104"
 async-trait = { version = "0.1.92", optional = true }
 axum = { version = "0.8.9", features = ["ws"] }

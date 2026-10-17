@@ -115,6 +115,12 @@ The commands are:
   installation. The operator provisions the fifteen-minute read grant separately.
 - `lore --repository ID --forbidden ID`: read the assigned repository and reject an
   existing unassigned repository through normal Lore commands.
+- `factory-hook --image IMAGE`: use the installation's disposable fixture and trusted
+  assignments to check bounded clone/edit/push, independent content verification,
+  an actual wrong-branch commit/push, native protected-branch denial and unchanged
+  human permissions. Both push API hook calls have source tests. This qualifies a
+  normal-push guard, not complete branch isolation. Requires the operator fixture
+  preparation described in the installation's native setup.
 - `boundaries`: require the native placeholder, reject real-token exposure and
   bootstrap/operator files, and deny raw TCP to public, identity and management
   destinations.
@@ -137,3 +143,22 @@ native channel mount. Source and durable data were preserved during the hard cut
 This evidence does not qualify general builds, environment composition, all real MCP
 components, durable infrastructure migration or Linux/CUDA. See the
 [execution record](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).
+
+The hook harness cleans up partial setup as well as failed workflows and removes
+only resources it admitted into a newly created temporary workspace. It refuses an
+existing workspace. Run its focused live cleanup regression with the local
+installation and accepted factory image:
+
+```sh
+VV_INSTALLATION=/absolute/path/to/veoveo-template-installation \
+VV_FACTORY_IMAGE=sha256:... \
+cargo test --locked --features first-path --bin first-path \
+  partial_setup_cleanup_and_existing_workspace -- --ignored --nocapture
+```
+
+It injects failures after workspace, profile, provider and sandbox admission (before
+readiness), checks that the workspace is absent after each, and preserves a labelled
+pre-existing workspace sentinel. The disposable authoring grant has ordinary
+read/write repository permissions and `is_service_account = false`; the original
+smoke grant stays read-only. Manual subject rotation in this fixture does not prove
+automatic Lore renewal or revocation, which remain separate qualification work.

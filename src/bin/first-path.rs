@@ -14,6 +14,9 @@ use std::{
 };
 use tokio_stream::wrappers::ReceiverStream;
 
+#[path = "../factory_hook.rs"]
+mod factory_hook;
+
 #[derive(Parser)]
 struct Args {
     #[arg(long)]
@@ -23,6 +26,10 @@ struct Args {
 }
 #[derive(Subcommand)]
 enum Action {
+    FactoryHook {
+        #[arg(long)]
+        image: String,
+    },
     Status,
     Factory {
         #[arg(long)]
@@ -378,6 +385,9 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let client = connect_as(&args.installation, "controller").await?;
     match args.command {
+        Action::FactoryHook { image } => {
+            factory_hook::run(&client, &args.installation, image).await?
+        }
         Action::Status => {
             client.list_all_sandboxes(Default::default()).await?;
             println!("Native Rust SDK authorized through verified TLS and OIDC");

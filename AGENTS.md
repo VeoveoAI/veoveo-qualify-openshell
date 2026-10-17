@@ -5,8 +5,9 @@ the README before changing a scenario.
 
 ## Rules
 
-- Use OpenShell unmodified. Configure it only through supported settings, and record
-  a limitation as a `limit` outcome instead of working around it in the harness.
+- Prefer upstream configuration and supported extensions. Maintained VeoveoAI
+  security/transport patches are allowed by the accepted architecture. Record
+  upstream and patched-build results separately; never hide a limitation in a probe.
 - Each scenario states the behavior Veoveo relies on as its rule, and its outcome keeps
   the measurements behind the verdict. Do not loosen a rule to make a release pass.
 - Test logic lives in Rust. The Rerun Catalog SDK probe is Python because that SDK is
@@ -15,8 +16,9 @@ the README before changing a scenario.
   reads as YAML.
 - Pin exact versions and image digests. When changing a pin, verify the latest stable
   release at its source.
-- Run the suite on macOS and on Linux before committing a change to scenarios, the probe
-  image or policies, and commit the resulting reports under `results/`.
+- For the local hard cut, run focused checks on macOS and record results. The existing
+  Linux installation is out of scope. Run broader scenarios when their affected
+  behavior requires it, and qualify the replacement Linux setup separately later.
 - Names, identifiers and formats follow the
   [naming and format conventions](https://github.com/VeoveoAI/veoveo-core/blob/main/docs/CONVENTIONS.md).
   Throwaway sandboxes are named `vv-qual-<run>-<role>` within 19 characters.

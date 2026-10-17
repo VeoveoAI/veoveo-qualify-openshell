@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1.27@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+FROM rust:1.99.0-trixie@sha256:6ff07edce8775d0f64be7aba9197229407301bddf2054d62c27b541a6238a181 AS build
+WORKDIR /src
+COPY Cargo.toml Cargo.lock build.rs rust-toolchain.toml ./
+COPY proto proto
+COPY src src
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/src/target \
+    cargo build --release --locked --bin probe && cp target/release/probe /probe
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
+RUN useradd --create-home --uid 1000 sandbox
+COPY --from=build /probe /usr/local/bin/probe
+USER sandbox
+WORKDIR /home/sandbox
+ENTRYPOINT ["/usr/local/bin/probe"]
+CMD ["serve"]

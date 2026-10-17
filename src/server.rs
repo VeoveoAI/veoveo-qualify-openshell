@@ -23,6 +23,7 @@ pub async fn serve(http: SocketAddr, grpc: SocketAddr) -> anyhow::Result<()> {
     let app = Router::new()
         .route("/healthz", get(|| async { "ok" }))
         .route("/mcp", post(mcp))
+        .route("/first-mcp", post(first_mcp))
         .route("/token", post(token))
         .route("/auth", get(auth))
         .route("/big", get(big))
@@ -60,6 +61,34 @@ async fn mcp(Json(request): Json<Value>) -> Json<Value> {
         "id": request.get("id").cloned().unwrap_or(Value::Null),
         "result": {"method": request.get("method"), "serverMs": now_ms()},
     }))
+}
+
+/// A deterministic MCP service for native-runtime acceptance, separate from the
+/// transport-echo endpoint used by the broad qualification suite.
+async fn first_mcp(headers: HeaderMap, Json(request): Json<Value>) -> Response {
+    if headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        != Some("Bearer fixture-app-token")
+    {
+        return axum::http::StatusCode::UNAUTHORIZED.into_response();
+    }
+    let id = request.get("id").cloned().unwrap_or(Value::Null);
+    let method = request["method"].as_str().unwrap_or_default();
+    if request.get("id").is_none() && method == "notifications/initialized" {
+        return axum::http::StatusCode::ACCEPTED.into_response();
+    }
+    let result = match method {
+        "initialize" => json!({"protocolVersion":"2025-11-25", "capabilities":{"tools":{}},
+            "serverInfo":{"name":"veoveo-first-mcp","version":"0.1.0"}}),
+        "ping" => json!({}),
+        "tools/list" => json!({"tools":[{"name":"echo", "description":"Return the supplied text",
+            "inputSchema":{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]}}]}),
+        "tools/call" if request["params"]["name"] == "echo" && request["params"]["arguments"]["text"].is_string() =>
+            json!({"content":[{"type":"text","text":request["params"]["arguments"]["text"]}],"isError":false}),
+        _ => return Json(json!({"jsonrpc":"2.0","id":id,"error":{"code":-32601,"message":"Unknown fixture method or tool"}})).into_response(),
+    };
+    Json(json!({"jsonrpc":"2.0","id":id,"result":result})).into_response()
 }
 
 async fn token(headers: HeaderMap, Form(fields): Form<BTreeMap<String, String>>) -> Json<Value> {

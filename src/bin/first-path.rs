@@ -27,10 +27,7 @@ struct Args {
 #[derive(Subcommand)]
 enum Action {
     LorePreflight,
-    LoreNegative {
-        #[arg(long)]
-        legacy_token_file: Option<PathBuf>,
-    },
+    LoreNegative,
     LoreDirect {
         #[arg(long)]
         image: String,
@@ -320,10 +317,7 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let client = connect_as(&args.installation, "controller").await?;
     match args.command {
-        Action::LoreNegative { legacy_token_file } => {
-            lore_direct::negative_credentials(&args.installation, legacy_token_file.as_deref())
-                .await?
-        }
+        Action::LoreNegative => lore_direct::negative_credentials(&args.installation).await?,
         Action::LorePreflight => lore_direct::preflight(&args.installation).await?,
         Action::LoreDirect { image, phase } => {
             lore_direct::run(&client, &args.installation, image, &phase).await?

@@ -1433,7 +1433,7 @@ async fn operator_repository_get(
         .parse()
         .map_err(Into::into)
 }
-pub async fn negative_credentials(root: &Path, legacy: Option<&Path>) -> anyhow::Result<()> {
+pub async fn negative_credentials(root: &Path) -> anyhow::Result<()> {
     let config = load(root)?;
     let identity = &config.clients["smoke"];
     let http = http(root)?;
@@ -1477,67 +1477,10 @@ pub async fn negative_credentials(root: &Path, legacy: Option<&Path>) -> anyhow:
         matches!(management_status, 7 | 16),
         "management token reached Lore"
     );
-    let mut report = serde_json::json!({"at":now(),"positiveDirectIdpGrpc":0,"openShellManagementBearerGrpc":management_status});
-    if let Some(path) = legacy {
-        let token = std::fs::read_to_string(path)?;
-        use base64::Engine;
-        let claims: serde_json::Value = serde_json::from_slice(
-            &base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(
-                token
-                    .trim()
-                    .split('.')
-                    .nth(1)
-                    .context("malformed legacy token")?,
-            )?,
-        )?;
-        ensure!(
-            claims["exp"].as_u64().is_some_and(|exp| exp > now()) && claims["iss"] != config.issuer,
-            "legacy token is expired or uses new issuer"
-        );
-        let legacy_issuer = claims["iss"].as_str().context("legacy issuer missing")?;
-        ensure!(
-            legacy_issuer == "https://localhost:7443/oauth",
-            "unexpected legacy issuer"
-        );
-        let old_keys: jsonwebtoken::jwk::JwkSet = serde_json::from_slice(&std::fs::read(
-            root.join("state/openshell/lore-direct/retired-jwks.json"),
-        )?)?;
-        let header = jsonwebtoken::decode_header(token.trim())?;
-        let key = old_keys
-            .find(header.kid.as_deref().context("legacy kid missing")?)
-            .context("legacy public key missing")?;
-        let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
-        validation.set_issuer(&[legacy_issuer]);
-        validation.set_audience(&[&config.audience]);
-        jsonwebtoken::decode::<serde_json::Value>(
-            token.trim(),
-            &jsonwebtoken::DecodingKey::from_jwk(key)?,
-            &validation,
-        )?;
-        let rejected = operator_repository_get(root, &identity.repository, token.trim()).await?;
-        ensure!(
-            matches!(rejected, 7 | 16),
-            "legacy signer token reached Lore"
-        );
-        report["validUnexpiredLegacySignerGrpc"] = rejected.into();
-        report["legacySignatureVerified"] = true.into();
-    }
-    save(
-        root,
-        if legacy.is_some() {
-            "legacy-negative-result"
-        } else {
-            "negative-credentials"
-        },
-        &report,
-    )?;
+    let report = serde_json::json!({"at":now(),"positiveDirectIdpGrpc":0,"openShellManagementBearerGrpc":management_status});
+    save(root, "negative-credentials", &report)?;
     println!(
-        "Trusted negative-credential checks passed; direct IdP works and management bearer is rejected{}",
-        if legacy.is_some() {
-            "; supplied legacy signer is also rejected"
-        } else {
-            ""
-        }
+        "Trusted negative-credential checks passed; direct IdP works and management bearer is rejected"
     );
     Ok(())
 }

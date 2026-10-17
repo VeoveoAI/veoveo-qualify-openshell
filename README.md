@@ -99,66 +99,84 @@ Apache-2.0. See [LICENSE](LICENSE).
 
 ## Focused macOS Native Path
 
-The local hard cut uses OpenShell 0.1.4 with the maintained supervisor HTTP/2 patch.
-This is a focused first-path qualification, separate from the broad 0.1.3 reports.
-It makes no inference calls. Exact source revisions and machine-local image IDs are
-recorded in the installation's [component lock](../veoveo-template-installation/openshell/component-lock.json).
+The local installation uses stock OpenShell 0.1.4 plus the existing pinned
+supervisor HTTP/2/gRPC patch. It makes no inference calls. Build its native SDK
+qualification with `cargo build --locked --features first-path --bin first-path`.
+Pass `--installation /absolute/path/to/veoveo-template-installation`.
 
-Build the native SDK exercise with `cargo build --locked --features first-path --bin
-first-path`. Pass `--installation` with the installation repository's absolute path.
-The commands are:
+The current factory credential path is direct IdP issuance, native OpenShell
+client-credentials renewal/injection, and native Lore repository authorization.
+Veoveo supplies trusted configuration and assignments. There is no running Veoveo
+token service, refresh daemon, manual signing helper or Desktop adapter.
 
-- `status`: authorize through verified TLS and generic OIDC.
-- `factory --image IMAGE`: create the initial factory/provider; `--replace` replaces
-  only the disposable first-path factory after an image rebuild.
-- `sync-factory`: update the native Lore provider and policy, waiting for supervisor
-  installation. The operator provisions the fifteen-minute read grant separately.
-- `lore --repository ID --forbidden ID`: read the assigned repository and reject an
-  existing unassigned repository through normal Lore commands.
-- `factory-hook --image IMAGE`: use the installation's disposable fixture and trusted
-  assignments to check bounded clone/edit/push, independent content verification,
-  an actual wrong-branch commit/push, native protected-branch denial and unchanged
-  human permissions. Both push API hook calls have source tests. This qualifies a
-  normal-push guard, not complete branch isolation. Requires the operator fixture
-  preparation described in the installation's native setup.
-- `boundaries`: require the native placeholder, reject real-token exposure and
-  bootstrap/operator files, and deny raw TCP to public, identity and management
-  destinations.
-- `service --image IMAGE`: recreate the private fixture and check MCP initialization,
-  notification, discovery and echo over authenticated `ForwardTcp`. Missing app
-  credentials and an OIDC workspace nonmember must fail. `--reuse` only checks it.
-- `service-recreation --image IMAGE`: replace twice while a same-named default
-  workspace sentinel exists. Verify its ID is unchanged and remove only a sentinel
-  created by this check.
+- `lore-preflight`: verify signatures/type/subject/audience, bounded claims/expiry,
+  and omitted/unlinked optional scope denial without storing token bytes.
+- `factory --image IMAGE`: create the native smoke factory/provider. `--replace`
+  explicitly replaces that disposable factory. `sync-factory` provisions it from
+  the locked image. These are setup actions, not automatic-renewal evidence.
+- `lore --repository ID --forbidden ID`: use normal Lore commands through the
+  read-only smoke policy; require an existing ungranted repository to fail.
+- `boundaries`: require a native opaque reference, reject IdP secrets/JWTs in the
+  environment, protect operator paths and deny raw public/issuer/management egress.
+- `lore-direct --image IMAGE_ID`: run bounded clone/edit/push, the existing branch
+  hook and native protection, then automatic renewal, source withdrawal, binding
+  removal/applied detach, termination and gateway recovery. It refuses pre-existing
+  workspaces and cleans up only this run's admitted resources, including partial setup.
+- `lore-negative`: use trusted HTTP/2 operator probes to compare valid direct grants
+  with management bearers. The optional legacy-token input is a historical cutover
+  check using the public recovery JWKS; it does not require an active signer.
+- `service --image IMAGE --reuse`: check private MCP initialization/discovery/echo,
+  missing application credentials and OIDC workspace-nonmember denial through native
+  `ForwardTcp`. `service-recreation --image IMAGE` checks scoped deletion and preserves
+  a same-named default-workspace sentinel.
 
-These commands passed on macOS with Docker 29.8.2 and LinuxKit 7.0.14. Native gateway
-restart recovered the existing factory and private service; their Lore/MCP checks
-then passed. Token rotation installed through native provider receipts without a
-factory restart. The six focused supervisor regressions passed, including a
-cancellation reproduction that failed before the fix and now resets stalled
-upstream calls before and after response headers, beyond the relay slot limit.
+The std-only canonical workload is `src/fixtures/lore_session.rs`. Build its test
+image from the locked accepted factory (no secrets in the context):
 
-The factory runs with network mode `none`, all capabilities dropped, and only the
-native channel mount. Source and durable data were preserved during the hard cut.
-This evidence does not qualify general builds, environment composition, all real MCP
-components, durable infrastructure migration or Linux/CUDA. See the
-[execution record](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).
+```sh
+docker build -f LoreDirect.Dockerfile \
+  --build-context factory=docker-image://veoveo/factory:local \
+  -t veoveo/lore-direct-fixture:local .
+```
 
-The hook harness cleans up partial setup as well as failed workflows and removes
-only resources it admitted into a newly created temporary workspace. It refuses an
-existing workspace. Run its focused live cleanup regression with the local
-installation and accepted factory image:
+It captures the native reference once per process and executes ordinary Lore commands.
+Renewal requires at least two native automatic refreshes, unchanged process/reference,
+real operations and fresh connections after original expiry plus verifier leeway.
+Every wrong-branch attempt clones the current target branch and commits before pushing.
+Protected branches and identities without a factory assignment retain native behavior.
+This is a normal-push workflow guard, not complete low-level branch isolation.
+
+`--phase workflow`, `--phase remaining`, and `--phase recovery` select focused checks.
+A phase report contains only gates actually measured; running `remaining` does not
+qualify renewal. The local acceptance record combines completed renewal evidence with
+separate remaining-gate evidence, retaining exact images and timestamps. Timed-out runs
+are not reported as complete. The recovery fixture uses native OnFailure and an
+idempotent workspace-aware entry point; no custom workload-recovery daemon is added.
+
+Native OpenShell intentionally refuses detach while an endpoint references that provider.
+The test first proves that precondition, removes the credential binding via native policy,
+awaits the active version, then detaches and requires an applied REVOKED receipt.
+Stream observations distinguish this combined transition from detach alone. Disabling
+only A's IdP client tests unavailable issuance while B operates/renews. Real notification
+streams must receive branch events before withdrawal. Measure events afterward, then
+require native stopped state and execution rejection. No Lore transport/expiry changes
+are permitted to manufacture a passing result.
+
+The focused cleanup regression uses its own workspace and the enabled protected
+fixture identity, independent of the lifecycle actors:
 
 ```sh
 VV_INSTALLATION=/absolute/path/to/veoveo-template-installation \
 VV_FACTORY_IMAGE=sha256:... \
 cargo test --locked --features first-path --bin first-path \
-  partial_setup_cleanup_and_existing_workspace -- --ignored --nocapture
+  direct_partial_setup_cleanup_and_existing_workspace -- --ignored --nocapture
 ```
 
-It injects failures after workspace, profile, provider and sandbox admission (before
-readiness), checks that the workspace is absent after each, and preserves a labelled
-pre-existing workspace sentinel. The disposable authoring grant has ordinary
-read/write repository permissions and `is_service_account = false`; the original
-smoke grant stays read-only. Manual subject rotation in this fixture does not prove
-automatic Lore renewal or revocation, which remain separate qualification work.
+It injects failures after workspace, profile, provider and sandbox admission and
+preserves a labelled pre-existing workspace. Source and durable data are preserved.
+Exact revisions/images and sanitized results are in the installation's
+[component lock](../veoveo-template-installation/openshell/component-lock.json) and
+[execution record](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md).
+Earlier signer/rotation smoke results remain historical evidence, distinct from the
+new direct-issuer gates. Entra/customer providers, interactive human Lore login,
+Linux/CUDA, general builds and composition remain separate qualifications.

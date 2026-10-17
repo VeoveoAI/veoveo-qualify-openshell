@@ -14,8 +14,8 @@ use std::{
 };
 use tokio_stream::wrappers::ReceiverStream;
 
-#[path = "../factory_hook.rs"]
-mod factory_hook;
+#[path = "../lore_direct.rs"]
+mod lore_direct;
 
 #[derive(Parser)]
 struct Args {
@@ -26,9 +26,16 @@ struct Args {
 }
 #[derive(Subcommand)]
 enum Action {
-    FactoryHook {
+    LorePreflight,
+    LoreNegative {
+        #[arg(long)]
+        legacy_token_file: Option<PathBuf>,
+    },
+    LoreDirect {
         #[arg(long)]
         image: String,
+        #[arg(long, default_value="all", value_parser=["all","remaining","workflow","recovery"])]
+        phase: String,
     },
     Status,
     Factory {
@@ -78,75 +85,7 @@ struct Bootstrap {
 }
 
 async fn sync_factory(client: &OpenShellClient, root: &std::path::Path) -> anyhow::Result<()> {
-    let token = std::fs::read_to_string(root.join("state/openshell/lore.token"))?;
-    let mut grpc = client.raw_grpc_fresh().await?;
-    let mut provider = grpc
-        .get_provider(p::GetProviderRequest {
-            name: "vv-lore".into(),
-            workspace_scope: Some(p::workspace_selector("default")),
-        })
-        .await?
-        .into_inner()
-        .provider
-        .ok_or_else(|| anyhow::anyhow!("Lore provider missing"))?;
-    provider.credentials = HashMap::from([("LORE_AUTH_TOKEN".into(), token.trim().into())]);
-    let updated = grpc
-        .update_provider(p::UpdateProviderRequest {
-            provider: Some(provider),
-            workspace_scope: Some(p::workspace_selector("default")),
-            ..Default::default()
-        })
-        .await?
-        .into_inner();
-    for receipt in updated.target_receipts {
-        let status = openshell_sdk::provider_readiness::wait_for_provider(
-            &mut grpc,
-            &receipt,
-            Duration::from_secs(30),
-        )
-        .await?;
-        ensure!(
-            status.outcome == openshell_sdk::provider_readiness::ProviderWaitOutcome::Complete,
-            "Lore credential update was not installed by supervisor"
-        );
-    }
-    let policy = openshell_policy::parse_sandbox_policy(&std::fs::read_to_string(
-        root.join("openshell/factory.yaml"),
-    )?)
-    .map_err(|_| anyhow::anyhow!("invalid approved sandbox policy"))?;
-    let updated = grpc
-        .update_config(p::UpdateConfigRequest {
-            sandbox: "vv-first-factory".into(),
-            workspace_scope: Some(p::workspace_selector("default")),
-            policy: Some(policy),
-            ..Default::default()
-        })
-        .await?
-        .into_inner();
-    tokio::time::timeout(Duration::from_secs(30), async {
-        loop {
-            let status = grpc
-                .get_sandbox_policy_status(p::GetSandboxPolicyStatusRequest {
-                    sandbox: "vv-first-factory".into(),
-                    workspace_scope: Some(p::workspace_selector("default")),
-                    version: updated.version,
-                    ..Default::default()
-                })
-                .await?
-                .into_inner();
-            if status.active_version == updated.version {
-                break;
-            }
-            tokio::time::sleep(Duration::from_millis(250)).await;
-        }
-        Ok::<_, anyhow::Error>(())
-    })
-    .await??;
-    println!(
-        "Supervisor installed the Lore credential and factory policy revision {}",
-        updated.version
-    );
-    Ok(())
+    lore_direct::sync_smoke(client, root).await
 }
 struct Issuer {
     http: reqwest::Client,
@@ -385,95 +324,20 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let client = connect_as(&args.installation, "controller").await?;
     match args.command {
-        Action::FactoryHook { image } => {
-            factory_hook::run(&client, &args.installation, image).await?
+        Action::LoreNegative { legacy_token_file } => {
+            lore_direct::negative_credentials(&args.installation, legacy_token_file.as_deref())
+                .await?
+        }
+        Action::LorePreflight => lore_direct::preflight(&args.installation).await?,
+        Action::LoreDirect { image, phase } => {
+            lore_direct::run(&client, &args.installation, image, &phase).await?
         }
         Action::Status => {
             client.list_all_sandboxes(Default::default()).await?;
             println!("Native Rust SDK authorized through verified TLS and OIDC");
         }
         Action::Factory { image, replace } => {
-            if !replace {
-                let profile = p::ProviderProfile {
-                    id: "veoveo-lore".into(),
-                    display_name: "Veoveo Lore".into(),
-                    description:
-                        "Operator-provisioned repository credential; endpoint binding is mandatory"
-                            .into(),
-                    credentials: vec![p::ProviderProfileCredential {
-                        name: "access_token".into(),
-                        env_vars: vec!["LORE_AUTH_TOKEN".into()],
-                        required: true,
-                        auth_style: "bearer".into(),
-                        header_name: "authorization".into(),
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                };
-                let response = client
-                    .raw_grpc_fresh()
-                    .await?
-                    .import_provider_profiles(p::ImportProviderProfilesRequest {
-                        workspace_scope: Some(p::workspace_selector("default")),
-                        profiles: vec![p::ProviderProfileImportItem {
-                            profile: Some(profile),
-                            source: "veoveo-installation".into(),
-                        }],
-                        ..Default::default()
-                    })
-                    .await?
-                    .into_inner();
-                ensure!(response.imported, "provider profile admission failed");
-                let token =
-                    std::fs::read_to_string(args.installation.join("state/openshell/lore.token"))?;
-                client
-                    .raw_grpc_fresh()
-                    .await?
-                    .create_provider(p::CreateProviderRequest {
-                        workspace_scope: Some(p::workspace_selector("default")),
-                        provider: Some(p::Provider {
-                            metadata: Some(p::ObjectMeta {
-                                name: "vv-lore".into(),
-                                workspace: "default".into(),
-                                ..Default::default()
-                            }),
-                            r#type: "veoveo-lore".into(),
-                            profile_workspace: "default".into(),
-                            credentials: HashMap::from([(
-                                "LORE_AUTH_TOKEN".into(),
-                                token.trim().into(),
-                            )]),
-                            ..Default::default()
-                        }),
-                        ..Default::default()
-                    })
-                    .await?;
-            } else {
-                let deleted = client
-                    .delete_sandbox("vv-first-factory", Default::default())
-                    .await?;
-                client
-                    .wait_deleted(
-                        "vv-first-factory",
-                        Duration::from_secs(60),
-                        deleted.sandbox_id.as_deref(),
-                    )
-                    .await?;
-            }
-            let policy = std::fs::read_to_string(args.installation.join("openshell/factory.yaml"))?;
-            create(
-                &client,
-                "vv-first-factory",
-                "default",
-                image,
-                &policy,
-                vec!["vv-lore".into()],
-                vec!["/bin/sleep".into(), "infinity".into()],
-            )
-            .await?;
-            println!(
-                "Factory ready; real Lore token remains in native OpenShell credential custody"
-            );
+            lore_direct::create_smoke(&client, &args.installation, image, replace).await?
         }
         Action::SyncFactory => sync_factory(&client, &args.installation).await?,
         Action::Boundaries => {
@@ -482,7 +346,7 @@ for p in /var/run/docker.sock /etc/veoveo/signing.key /secrets/signing.key /gate
   test ! -r "$p" || exit 91
 done
 timeout 3 /bin/bash -c 'exec 3<>/dev/tcp/1.1.1.1/443' && exit 92
-timeout 3 /bin/bash -c 'exec 3<>/dev/tcp/10.231.10.13/8443' && exit 93
+timeout 3 /bin/bash -c 'exec 3<>/dev/tcp/auth.localhost/8443' && exit 93
 timeout 3 /bin/bash -c 'exec 3<>/dev/tcp/host.openshell.internal/17670' && exit 94
 printf 'boundary-checks-passed\n'
 "#;
@@ -508,12 +372,30 @@ printf 'boundary-checks-passed\n'
                     ExecOptions::default(),
                 )
                 .await?;
-            let real_token =
-                std::fs::read_to_string(args.installation.join("state/openshell/lore.token"))?;
+            let environment = String::from_utf8(result.stdout)?;
             ensure!(
                 result.exit_code == 0
-                    && !String::from_utf8_lossy(&result.stdout).contains(real_token.trim()),
-                "real Lore credential found in workload environment"
+                    && environment
+                        .lines()
+                        .filter(|line| line.starts_with("LORE_AUTH_TOKEN="))
+                        .all(|line| line.starts_with("LORE_AUTH_TOKEN=openshell:resolve:")),
+                "native reference missing"
+            );
+            for identity in lore_direct::load(&args.installation)?.clients.values() {
+                let secret = std::fs::read_to_string(&identity.secret_file)?;
+                ensure!(
+                    !environment.contains(secret.trim()),
+                    "IdP client secret found in workload environment"
+                );
+            }
+            ensure!(
+                !environment
+                    .lines()
+                    .any(|line| line
+                        .split_once('=')
+                        .is_some_and(|(_, value)| value.starts_with("eyJ")
+                            && value.matches('.').count() == 2)),
+                "JWT found in workload environment"
             );
             println!(
                 "Factory has only the Lore placeholder, no bootstrap/operator mounts or Docker socket; direct public and identity-administration egress denied"

@@ -21,6 +21,7 @@ path = "src/bin/first-path.rs"
 required-features = ["first-path"]
 
 [dependencies]
+jsonwebtoken = { version = "=9.3.1", default-features = false, optional = true }
 base64 = "=0.23.1"
 anyhow = "=1.0.104"
 async-trait = { version = "0.1.92", optional = true }
@@ -54,7 +55,7 @@ unsafe_code = "deny"
 all = { level = "warn", priority = -1 }
 
 [features]
-first-path = ["dep:openshell-sdk", "dep:openshell-policy", "dep:async-trait"]
+first-path = ["dep:jsonwebtoken", "dep:openshell-sdk", "dep:openshell-policy", "dep:async-trait"]
 openshell-sdk = ["dep:openshell-sdk"]
 openshell-policy = ["dep:openshell-policy"]
 async-trait = ["dep:async-trait"]

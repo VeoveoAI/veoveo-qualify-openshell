@@ -134,8 +134,8 @@ pub fn server() -> Policy {
 
 /// Only ordinary Lore clone/push operations. The hook is a normal-push guard,
 /// not a complete branch-isolation test against raw mutable storage APIs.
-pub fn factory_hook(provider: &str) -> Policy {
-    let paths = [
+pub fn lore_authoring(provider: &str, notifications: bool) -> Policy {
+    let mut paths = vec![
         "/lore.environment.v1.EnvironmentService/EnvironmentGet",
         "/urc.rpc.EnvironmentService/Get",
         "/lore.repository.v1.RepositoryService/RepositoryGet",
@@ -153,6 +153,9 @@ pub fn factory_hook(provider: &str) -> Policy {
         "/lore.storage.v1.StorageService/MutableLoad",
         "/lore.storage.v1.StorageService/Put",
     ];
+    if notifications {
+        paths.push("/lore.notification.NotificationService/Subscribe");
+    }
     Policy {
         version: 1,
         filesystem_policy: filesystem(&["/sandbox"]),

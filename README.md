@@ -106,6 +106,37 @@ extension. These focused actions make no inference calls. Build the native SDK
 qualification with `cargo build --locked --features first-path --bin first-path`.
 Pass `--installation /absolute/path/to/veoveo-template-installation`.
 
+The same native `first-path` transport actions can target the explicitly authorized
+Linux reference. Existing application Tasks/permissions/restart acceptance belongs
+to the Time, Artifact and Media suites, not the echo fixture. Preserve the separate
+Mac evidence and follow the [reference execution gates](../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md#reference-linux-deployment-and-signed-wavespeed-webhook-goal).
+
+`first-path` reads its existing private
+`state/openshell/controller.json` (and `outsider.json` for the nonmember case):
+
+```json
+{
+  "issuer": "https://login.microsoftonline.com/<tenant-id>/v2.0",
+  "clientId": "<existing-authorized-client-id>",
+  "clientSecretFile": "/operator/private/client.secret",
+  "scope": "api://<resource-app-id>/.default",
+  "gateway": "https://localhost:17670",
+  "gatewayCaFile": "/operator/private/gateway-ca.crt"
+}
+```
+
+The optional `scope` is sent unchanged in the client-credentials form only when
+selected; blank/control-character values are rejected. Optional `issuerCaFile`
+adds an explicitly selected PEM CA to normal trusted roots. Omit it for a
+publicly trusted issuer; no installation-local `tls/ca/ca.crt` is implicitly read.
+The existing Mac `identity/configure-openshell` producer writes that installation
+CA explicitly. The gateway's separate `gatewayCaFile` remains required. TLS
+verification and issuer/token-endpoint same-origin checks remain enforced.
+Keep secrets in protected files, never argv or reports. These fields do not
+create an identity or grant authority: use existing reviewed native operator CLI
+and restricted-forwarder proof where appropriate; do not provision a machine
+administrator merely to run this fixture.
+
 The current factory credential path is direct IdP issuance, native OpenShell
 client-credentials renewal/injection, and native Lore repository authorization.
 Veoveo supplies trusted configuration and assignments. There is no running Veoveo

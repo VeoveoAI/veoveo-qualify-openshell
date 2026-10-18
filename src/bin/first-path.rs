@@ -1,5 +1,5 @@
 //! Focused native-SDK exercise for the local OpenShell cutover. No inference calls.
-use anyhow::ensure;
+use anyhow::{Context as _, ensure};
 use clap::{Parser, Subcommand};
 use openshell_sdk::raw::proto as p;
 use openshell_sdk::{
@@ -76,6 +76,50 @@ struct Controller {
     client_secret_file: PathBuf,
     gateway: String,
     gateway_ca_file: PathBuf,
+    scope: Option<String>,
+    issuer_ca_file: Option<PathBuf>,
+}
+
+impl Controller {
+    fn load(path: &std::path::Path) -> anyhow::Result<Self> {
+        let config: Self = serde_json::from_slice(
+            &std::fs::read(path).context("controller configuration unavailable")?,
+        )
+        .context("invalid controller configuration")?;
+        ensure!(
+            config.scope.as_ref().is_none_or(
+                |scope| !scope.trim().is_empty() && !scope.chars().any(char::is_control)
+            ),
+            "controller scope must be nonempty and contain no control characters"
+        );
+        ensure!(
+            config
+                .issuer_ca_file
+                .as_ref()
+                .is_none_or(|path| !path.as_os_str().is_empty()),
+            "controller issuerCaFile must be a nonempty path when selected"
+        );
+        Ok(config)
+    }
+
+    fn issuer_http(&self) -> anyhow::Result<reqwest::Client> {
+        let mut builder = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none());
+        if let Some(path) = &self.issuer_ca_file {
+            let pem = std::fs::read(path).context("controller issuer CA unavailable")?;
+            let certificates = reqwest::Certificate::from_pem_bundle(&pem)
+                .context("invalid controller issuer CA")?;
+            ensure!(
+                !certificates.is_empty(),
+                "invalid controller issuer CA: no certificates"
+            );
+            for certificate in certificates {
+                builder = builder.add_root_certificate(certificate);
+            }
+        }
+        builder
+            .build()
+            .context("controller issuer TLS client unavailable")
+    }
 }
 #[derive(Deserialize)]
 struct Token {
@@ -99,14 +143,18 @@ impl Refresh for Issuer {
     async fn refresh(&self) -> Result<RefreshedToken, RefreshError> {
         let secret = std::fs::read_to_string(&self.config.client_secret_file)
             .map_err(|_| RefreshError::Terminal("controller credential unavailable".into()))?;
+        let mut form = vec![
+            ("grant_type", "client_credentials"),
+            ("client_id", self.config.client_id.as_str()),
+            ("client_secret", secret.trim()),
+        ];
+        if let Some(scope) = &self.config.scope {
+            form.push(("scope", scope.as_str()));
+        }
         let response = self
             .http
             .post(&self.token_endpoint)
-            .form(&[
-                ("grant_type", "client_credentials"),
-                ("client_id", self.config.client_id.as_str()),
-                ("client_secret", secret.trim()),
-            ])
+            .form(&form)
             .send()
             .await
             .map_err(|_| RefreshError::Transient("OIDC endpoint unavailable".into()))?;
@@ -128,15 +176,8 @@ impl Refresh for Issuer {
 }
 
 async fn connect_as(root: &std::path::Path, identity: &str) -> anyhow::Result<OpenShellClient> {
-    let config: Controller = serde_json::from_slice(&std::fs::read(
-        root.join(format!("state/openshell/{identity}.json")),
-    )?)?;
-    let http = reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .add_root_certificate(reqwest::Certificate::from_pem(&std::fs::read(
-            root.join("tls/ca/ca.crt"),
-        )?)?)
-        .build()?;
+    let config = Controller::load(&root.join(format!("state/openshell/{identity}.json")))?;
+    let http = config.issuer_http()?;
     #[derive(Deserialize)]
     struct Discovery {
         issuer: String,
@@ -582,4 +623,202 @@ printf 'boundary-checks-passed\n'
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod controller_inputs {
+    use super::*;
+    use axum::{Form, Json, Router, extract::State, http::StatusCode, routing::post};
+    use serde_json::json;
+    use std::{
+        fs::OpenOptions,
+        io::Write as _,
+        os::unix::fs::{DirBuilderExt as _, OpenOptionsExt as _},
+        sync::atomic::{AtomicU64, Ordering},
+    };
+
+    static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
+
+    struct Fixture {
+        directory: PathBuf,
+    }
+
+    impl Fixture {
+        fn new() -> anyhow::Result<Self> {
+            let directory = std::env::temp_dir().join(format!(
+                "veoveo-controller-{}-{}-{}",
+                std::process::id(),
+                NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed),
+                SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+            ));
+            std::fs::DirBuilder::new().mode(0o700).create(&directory)?;
+            Ok(Self { directory })
+        }
+
+        fn config(
+            &self,
+            scope: Option<&str>,
+            issuer_ca: Option<&str>,
+        ) -> anyhow::Result<Controller> {
+            let secret = self.directory.join("client.secret");
+            if !secret.exists() {
+                OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .mode(0o600)
+                    .open(&secret)?
+                    .write_all(b"unit-controller-secret")?;
+            }
+            let path = self.directory.join("controller.json");
+            let mut value = json!({"issuer":"https://idp.example/tenant/v2.0", "clientId":"unit-controller",
+                "clientSecretFile":secret,"gateway":"https://localhost:17670","gatewayCaFile":"unused"});
+            if let Some(scope) = scope {
+                value["scope"] = json!(scope);
+            }
+            if let Some(ca) = issuer_ca {
+                value["issuerCaFile"] = json!(ca);
+            }
+            std::fs::write(&path, serde_json::to_vec(&value)?)?;
+            Controller::load(&path)
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.directory);
+        }
+    }
+
+    struct Server(tokio::task::JoinHandle<()>);
+    impl Drop for Server {
+        fn drop(&mut self) {
+            self.0.abort();
+        }
+    }
+
+    #[tokio::test]
+    async fn forwards_selected_scope_unchanged_and_omits_unselected_scope() -> anyhow::Result<()> {
+        async fn token(
+            State(expected): State<Option<String>>,
+            Form(form): Form<HashMap<String, String>>,
+        ) -> Json<serde_json::Value> {
+            assert_eq!(form.get("scope"), expected.as_ref());
+            assert_eq!(
+                form.get("grant_type").map(String::as_str),
+                Some("client_credentials")
+            );
+            assert_eq!(
+                form.get("client_id").map(String::as_str),
+                Some("unit-controller")
+            );
+            assert_eq!(
+                form.get("client_secret").map(String::as_str),
+                Some("unit-controller-secret")
+            );
+            Json(json!({"access_token":"unit-token","expires_in":60}))
+        }
+        let fixture = Fixture::new()?;
+        for scope in [
+            None,
+            Some("api://unit-resource/.default"),
+            Some("openid profile"),
+        ] {
+            let config = fixture.config(scope, None)?;
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+            let token_endpoint = format!("http://{}/token", listener.local_addr()?);
+            let app = Router::new()
+                .route("/token", post(token))
+                .with_state(scope.map(str::to_owned));
+            let _server = Server(tokio::spawn(async move {
+                axum::serve(listener, app).await.unwrap();
+            }));
+            let issuer = Issuer {
+                http: config.issuer_http()?,
+                config,
+                token_endpoint,
+            };
+            assert!(issuer.refresh().await?.expires_at.is_some());
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn token_rejection_does_not_expose_credentials_or_response_body() -> anyhow::Result<()> {
+        let fixture = Fixture::new()?;
+        let config = fixture.config(None, None)?;
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let token_endpoint = format!("http://{}/token", listener.local_addr()?);
+        let app = Router::new().route(
+            "/token",
+            post(|| async {
+                (
+                    StatusCode::UNAUTHORIZED,
+                    "unit-controller-secret unit-token",
+                )
+            }),
+        );
+        let _server = Server(tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        }));
+        let issuer = Issuer {
+            http: config.issuer_http()?,
+            config,
+            token_endpoint,
+        };
+        let error = format!(
+            "{:?}",
+            issuer.refresh().await.expect_err("rejection must fail")
+        );
+        assert!(error.contains("OIDC client authentication rejected"));
+        assert!(!error.contains("unit-controller-secret") && !error.contains("unit-token"));
+        Ok(())
+    }
+
+    #[test]
+    fn issuer_ca_is_explicit_and_invalid_configuration_fails_clearly() -> anyhow::Result<()> {
+        let fixture = Fixture::new()?;
+        let config = fixture.config(None, None)?;
+        assert!(config.issuer_ca_file.is_none());
+        config.issuer_http()?; // No installation-local CA exists or is needed.
+        for scope in ["", "  ", "scope\ninvalid"] {
+            assert!(
+                fixture
+                    .config(Some(scope), None)
+                    .err()
+                    .unwrap()
+                    .to_string()
+                    .contains("controller scope")
+            );
+        }
+        assert!(
+            fixture
+                .config(None, Some(""))
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("issuerCaFile")
+        );
+        let missing = fixture.directory.join("absent.pem");
+        assert!(
+            fixture
+                .config(None, missing.to_str())?
+                .issuer_http()
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("issuer CA unavailable")
+        );
+        let invalid = fixture.directory.join("invalid.pem");
+        std::fs::write(&invalid, "not a certificate")?;
+        assert!(
+            fixture
+                .config(None, invalid.to_str())?
+                .issuer_http()
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("invalid controller issuer CA")
+        );
+        Ok(())
+    }
 }

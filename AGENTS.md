@@ -16,9 +16,10 @@ the README before changing a scenario.
   reads as YAML.
 - Pin exact versions and image digests. When changing a pin, verify the latest stable
   release at its source.
-- For the local hard cut, run focused checks on macOS and record results. The existing
-  Linux installation is out of scope. Run broader scenarios when their affected
-  behavior requires it, and qualify the replacement Linux setup separately later.
+- Preserve the qualified Mac hard-cut evidence. The explicitly authorized reference
+  Linux deployment, Entra and signed Media webhook are now in scope under
+  `../veoveo-docs/OPENSHELL_HARDCUT_PLAN.md`. Preserve remote state and report Linux
+  measurements separately; GPU/CUDA qualification remains separate.
 - Names, identifiers and formats follow the
   [naming and format conventions](https://github.com/VeoveoAI/veoveo-core/blob/main/docs/CONVENTIONS.md).
   Throwaway sandboxes are named `vv-qual-<run>-<role>` within 19 characters.

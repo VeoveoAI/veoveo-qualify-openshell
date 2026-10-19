@@ -12,7 +12,9 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio_stream::wrappers::ReceiverStream;
+
+#[path = "../forward_isolation.rs"]
+mod forward_isolation;
 
 #[path = "../lore_direct.rs"]
 mod lore_direct;
@@ -38,6 +40,8 @@ enum Action {
         phase: String,
     },
     Status,
+    /// Prove direct forwarding and workspace denial with an existing restricted identity.
+    ForwardIsolation(forward_isolation::Options),
     Factory {
         #[arg(long)]
         image: String,
@@ -262,45 +266,16 @@ async fn create(
 }
 
 async fn request(client: &OpenShellClient, bytes: Vec<u8>) -> anyhow::Result<Vec<u8>> {
-    let (tx, rx) = tokio::sync::mpsc::channel(4);
-    tx.send(p::TcpForwardFrame {
-        payload: Some(p::tcp_forward_frame::Payload::Init(p::TcpForwardInit {
-            sandbox: "vv-first-mcp".into(),
+    forward_isolation::request(
+        client,
+        &forward_isolation::Target {
             workspace: "vv-first-private".into(),
-            target: Some(p::tcp_forward_init::Target::Tcp(p::TcpRelayTarget {
-                host: "127.0.0.1".into(),
-                port: 8080,
-            })),
-            ..Default::default()
-        })),
-    })
-    .await?;
-    let mut stream = client
-        .raw_grpc_fresh()
-        .await?
-        .forward_tcp(ReceiverStream::new(rx))
-        .await?
-        .into_inner();
-    tx.send(p::TcpForwardFrame {
-        payload: Some(p::tcp_forward_frame::Payload::Data(bytes)),
-    })
-    .await?;
-    let mut output = Vec::new();
-    tokio::time::timeout(Duration::from_secs(15), async {
-        while let Some(frame) = stream.message().await? {
-            if let Some(p::tcp_forward_frame::Payload::Data(data)) = frame.payload {
-                ensure!(
-                    output.len() + data.len() <= 1024 * 1024,
-                    "forward response exceeded limit"
-                );
-                output.extend(data);
-            }
-        }
-        Ok::<_, anyhow::Error>(())
-    })
-    .await??;
-    drop(tx);
-    Ok(output)
+            sandbox: "vv-first-mcp".into(),
+            port: 8080,
+        },
+        bytes,
+    )
+    .await
 }
 
 async fn recreate_service(
@@ -364,8 +339,19 @@ fn response_json(reply: &[u8]) -> anyhow::Result<serde_json::Value> {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+    // This action must never load a machine administrator's controller file.
+    if let Action::ForwardIsolation(options) = &args.command {
+        options.validate()?;
+        return tokio::time::timeout(Duration::from_secs(60), async {
+            let client = connect_as(&args.installation, &options.identity).await?;
+            forward_isolation::run(&client, options).await
+        })
+        .await
+        .context("forward isolation exceeded 60 seconds")?;
+    }
     let client = connect_as(&args.installation, "controller").await?;
     match args.command {
+        Action::ForwardIsolation(_) => unreachable!("handled before controller connection"),
         Action::ServiceIngress { image } => service_ingress_harness::run(&client, image).await?,
         Action::LoreNegative => lore_direct::negative_credentials(&args.installation).await?,
         Action::LorePreflight => lore_direct::preflight(&args.installation).await?,

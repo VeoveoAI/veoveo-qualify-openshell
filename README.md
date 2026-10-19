@@ -137,6 +137,30 @@ create an identity or grant authority: use existing reviewed native operator CLI
 and restricted-forwarder proof where appropriate; do not provision a machine
 administrator merely to run this fixture.
 
+For a restricted existing forwarder, `forward-isolation` selects
+`state/openshell/forwarder.json` in that same Controller format **before** loading
+any default controller. It does not create an identity or grant, call GetSandbox,
+list resources, execute commands, or mutate a workload. The operator must first
+confirm that both selected targets exist and are Ready using its separate
+administrative context: native NotFound deliberately hides unauthorized existence.
+
+```sh
+cargo build --locked --release --features first-path --bin first-path
+target/release/first-path --installation /operator/private/installation \
+  forward-isolation --identity forwarder \
+  --allowed-workspace vv-services --allowed-sandbox time --allowed-port 8800 \
+  --ready-url http://time.internal:8800/readyz \
+  --denied-workspace vv-control --denied-sandbox hub --denied-port 8080
+```
+
+One direct native ForwardTcp stream sends the readiness GET with its logical HTTP
+Host unchanged and requires HTTP 200. A second sends only its explicit init and
+requires exact gRPC NotFound; a transport, authentication or scope error is not an
+isolation pass. The entire action is bounded to 60 seconds, readiness response collection to
+15 seconds and 1 MiB. Gateway TLS verification and normal credential refresh use
+the existing SDK; no caller token or response body is reported. This qualifies
+native workspace forwarding boundaries, not application MCP authorization.
+
 The current factory credential path is direct IdP issuance, native OpenShell
 client-credentials renewal/injection, and native Lore repository authorization.
 Veoveo supplies trusted configuration and assignments. There is no running Veoveo

@@ -212,7 +212,12 @@ pub async fn exec(name: &str, command: &[&str]) -> anyhow::Result<Output> {
 pub async fn exec_probe(name: &str, probe_args: &[&str]) -> anyhow::Result<Value> {
     let mut command = vec!["probe"];
     command.extend_from_slice(probe_args);
-    let output = exec(name, &command).await?;
+    exec_json(name, &command).await
+}
+
+/// Runs a command inside a sandbox and decodes the JSON report it prints.
+pub async fn exec_json(name: &str, command: &[&str]) -> anyhow::Result<Value> {
+    let output = exec(name, command).await?;
     let text = output.stdout.trim();
     let start = text
         .find('{')

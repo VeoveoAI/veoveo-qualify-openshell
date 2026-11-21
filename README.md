@@ -11,12 +11,33 @@ per OpenShell release and host under `results/`.
 |---|---|
 | macOS on Apple Silicon | Docker Desktop 4.94 or newer, whose Linux kernel enables Landlock; host networking enabled; Enhanced Container Isolation disabled |
 | Linux | Docker 28 or newer and a kernel with Landlock ABI 3; the NVIDIA Container Toolkit with a CDI specification for the GPU scenario |
-| Both | The OpenShell CLI and a local gateway with the Docker compute driver, started with `OPENSHELL_TELEMETRY_ENABLED=false`; Rust 1.99.0 |
+| Both | The OpenShell CLI and a local gateway with the Docker compute driver, started with `OPENSHELL_TELEMETRY_ENABLED=false`; Rust 1.100.0 |
 
 ## Run
 
+Veoveo runs the VeoveoAI fork of OpenShell, so the suite qualifies the revision an
+installation deploys, built from a checkout of that revision. Build its CLI and gateway
+and its supervisor and sandbox images, then start upstream's standalone Docker gateway
+on its own port, sandbox label and state directory. That leaves any other gateway on the
+host, and its sandboxes, alone:
+
 ```sh
-cargo run --release -- run
+cargo build -p openshell-cli --bin openshell -p openshell-gateway --bin openshell-gateway
+CONTAINER_ENGINE=docker IMAGE_TAG=qualify mise run build:docker:supervisor
+CONTAINER_ENGINE=docker IMAGE_TAG=qualify mise run build:docker:sandbox
+OPENSHELL_TELEMETRY_ENABLED=false OPENSHELL_SERVER_PORT=18080 \
+  OPENSHELL_DOCKER_GATEWAY_NAME=vv-qualify OPENSHELL_SANDBOX_NAMESPACE=vv-qualify \
+  OPENSHELL_SUPERVISOR_IMAGE=openshell/supervisor:qualify \
+  OPENSHELL_SANDBOX_RUNTIME_IMAGE=openshell/sandbox:qualify \
+  bash tasks/scripts/gateway-docker.sh
+```
+
+Run the suite from this repository with that checkout's CLI first on `PATH` and the
+gateway selected by name:
+
+```sh
+PATH=/path/to/openshell/target/debug:$PATH OPENSHELL_GATEWAY=vv-qualify \
+  cargo run --release -- run
 ```
 
 The default profile streams each scenario for 15 seconds and moves 512 MiB in the
@@ -31,11 +52,11 @@ PostgreSQL container and the generated policies in place for inspection.
 
 The GitHub push scenario needs a provider created from a token that can write to both
 of its repositories, so that only sandbox policy separates them. Import the GitHub
-example profile from the OpenShell release under test, create the provider from a token
+example profile from the OpenShell checkout under test, create the provider from a token
 file, and name it in the run:
 
 ```sh
-openshell profile import --url https://raw.githubusercontent.com/NVIDIA/OpenShell/v0.1.3/providers/github.yaml --global
+openshell profile import -f /path/to/openshell/providers/github.yaml --global
 GITHUB_TOKEN="$(cat ~/.config/veoveo/github-environments.token)" \
   openshell provider create --name vv-github --type github --credential GITHUB_TOKEN
 cargo run --release -- run --github-provider vv-github
@@ -60,10 +81,8 @@ select other repositories.
 | `outbound.mcp_upgrade` | Limit: endpoints inspected as MCP refuse WebSocket upgrades |
 | `outbound.websocket_inspected` | An endpoint inspected as `websocket` upgrades and echoes |
 | `outbound.https_rustls` | A rustls HTTPS client trusts the TLS-inspecting proxy |
-| `postgres.inspected`, `postgres.tcp` | A sandbox reaches PostgreSQL 18.6 through an endpoint without a protocol, which OpenShell inspects, and through a `tcp` endpoint. Queries answer, a session advisory lock holds for the whole stream and `LISTEN`/`NOTIFY` delivers every write in order |
-| `redap.forward` | The Rerun 0.38.1 Catalog SDK lists and reads a dataset through a port forward |
-| `redap.native_exposure` | Limit: native Redap clients cannot connect through exposure |
-| `redap.grpc_web` | Redap gRPC-Web, used by the Rerun WebViewer, answers through exposure |
+| `outbound.docker_hub_token` | A static Go client, the TLS stack `buildctl` fetches a pull token with, trusts the TLS-inspecting proxy and receives Docker Hub's anonymous pull token through Hub's `docker_hub_token` endpoint, a REST endpoint that allows only `GET /token`; `POST /token` and `GET /v2/` there are refused with 403 |
+| `postgres.inspected`, `postgres.tcp` | A sandbox reaches PostgreSQL 19.0 through an endpoint without a protocol, which OpenShell inspects, and through a `tcp` endpoint. Queries answer, a session advisory lock holds for the whole stream and `LISTEN`/`NOTIFY` delivers every write in order |
 | `transfer.outbound`, `transfer.inbound` | Large bodies cross the sandbox boundary byte-exact in both directions |
 | `dev.installable` | rustup adds a target, Cargo installs a crate, Git fetches from GitHub and a Cargo Git dependency builds |
 | `dev.persistence` | The workspace keeps a verified cache and Cargo output across stop, start and restart-policy replacement |
@@ -89,7 +108,7 @@ be revisited.
 |---|---|
 | `src/bin/probe.rs` | The probe that runs inside sandboxes and on the host |
 | `src/harness/` | Sandbox lifecycle, typed policies, host targets, scenarios and the report |
-| `Dockerfile`, `image/` | The probe image, a sample crate and the Rerun Catalog SDK probe |
+| `Dockerfile`, `image/` | The probe image, a sample crate and the Go token probe |
 | `providers/` | The endpointless provider profile that `provider.bound_secret` imports and removes on each run |
 | `results/<openshell-version>/<os>-<arch>.json` | Committed reports in the `https://veoveo.ai/formats/openshell-qualification` format |
 

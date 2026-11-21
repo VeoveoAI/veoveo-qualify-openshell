@@ -108,13 +108,6 @@ enum Command {
         #[arg(long)]
         url: String,
     },
-    /// Call a unary gRPC method over gRPC-Web.
-    GrpcWeb {
-        #[arg(long)]
-        base: String,
-        #[arg(long)]
-        method: String,
-    },
 }
 
 #[tokio::main]
@@ -163,7 +156,6 @@ async fn main() -> anyhow::Result<()> {
             probes::service_ingress::run(&base, deleted).await?
         }
         Command::Https { url } => probes::https(&url).await?,
-        Command::GrpcWeb { base, method } => probes::grpc_web(&base, &method).await?,
     };
     println!("{}", serde_json::to_string(&report)?);
     Ok(())

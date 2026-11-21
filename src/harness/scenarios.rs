@@ -7,7 +7,7 @@ use super::{
     policy::{self, HostPorts},
     report::Outcome,
 };
-use crate::{client, probes};
+use crate::client;
 use anyhow::Context;
 use serde_json::{Value, json};
 use std::{path::Path, time::Duration};
@@ -34,7 +34,6 @@ pub struct Settings {
 const SERVER_HTTP: u16 = 8080;
 const STREAM_INTERVAL_MS: u64 = 500;
 const BURST_STREAMS: usize = 50;
-const SAMPLE_ROWS: u64 = 2000;
 
 fn num(value: &Value, pointer: &str) -> Option<u64> {
     value.pointer(pointer).and_then(Value::as_u64)
@@ -70,7 +69,6 @@ fn deadline(settings: &Settings) -> u64 {
 struct Sandboxes {
     server: String,
     client: String,
-    redap: String,
     dev: String,
     gpu: Option<String>,
 }
@@ -80,7 +78,6 @@ impl Sandboxes {
         let mut names = vec![
             self.server.as_str(),
             self.client.as_str(),
-            self.redap.as_str(),
             self.dev.as_str(),
         ];
         names.extend(self.gpu.as_deref());
@@ -95,8 +92,6 @@ struct RunContext {
     server_url: String,
     server_grpc_url: String,
     grpc_forward_port: u16,
-    redap_url: String,
-    redap_forward_port: u16,
 }
 
 pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outcome>> {
@@ -127,7 +122,6 @@ pub async fn run(settings: &Settings, workdir: &Path) -> anyhow::Result<Vec<Outc
     let sandboxes = Sandboxes {
         server: format!("{prefix}-server"),
         client: format!("{prefix}-client"),
-        redap: format!("{prefix}-redap"),
         dev: format!("{prefix}-dev"),
         gpu: settings.gpu.then(|| format!("{prefix}-gpu")),
     };
@@ -165,7 +159,6 @@ async fn setup(
     policy::write(&policy::dev(), &dev_policy)?;
 
     let grpc_forward_port = host::free_port()?;
-    let redap_forward_port = host::free_port()?;
     let home = || ("HOME".to_owned(), "/sandbox".to_owned());
     let spec = |name: &str, policy: &Path, command: Vec<String>| SandboxSpec {
         name: name.to_owned(),
@@ -212,28 +205,6 @@ async fn setup(
         .await
         .context("create client sandbox")?;
 
-    let mut redap = spec(
-        &sandboxes.redap,
-        &server_policy,
-        vec![
-            "sh".into(),
-            "-c".into(),
-            format!(
-                "mkdir -p /sandbox/data && /usr/local/rerun/bin/python /usr/local/share/probe/make_rrd.py /sandbox/data/segment.rrd \
-                 && exec /usr/local/rerun/bin/rerun server --host 127.0.0.1 -p {redap_forward_port} -d probe=/sandbox/data"
-            ),
-        ],
-    );
-    redap.env.push(("RERUN_ANALYTICS".into(), "false".into()));
-    redap.expose = Some(Exposure {
-        port: redap_forward_port,
-        service: None,
-        bearer_passthrough: false,
-    });
-    openshell::create(&redap)
-        .await
-        .context("create Redap sandbox")?;
-
     let mut dev = spec(&sandboxes.dev, &dev_policy, sleep());
     dev.env
         .push(("CARGO_TARGET_DIR".into(), "/sandbox/target".into()));
@@ -251,20 +222,15 @@ async fn setup(
 
     let server_url = openshell::service_url(&sandboxes.server, None).await?;
     let server_grpc_url = openshell::service_url(&sandboxes.server, Some("grpc")).await?;
-    let redap_url = openshell::service_url(&sandboxes.redap, None).await?;
     wait_http_ok(&format!("{server_url}/healthz")).await?;
     openshell::forward_start(grpc_forward_port, &sandboxes.server).await?;
-    openshell::forward_start(redap_forward_port, &sandboxes.redap).await?;
     wait_listening(grpc_forward_port).await?;
-    wait_listening(redap_forward_port).await?;
-    wait_redap_ready(&sandboxes.redap, redap_forward_port).await?;
 
     Ok(RunContext {
         policies: workdir.to_path_buf(),
         sandboxes: Sandboxes {
             server: sandboxes.server.clone(),
             client: sandboxes.client.clone(),
-            redap: sandboxes.redap.clone(),
             dev: sandboxes.dev.clone(),
             gpu: sandboxes.gpu.clone(),
         },
@@ -272,8 +238,6 @@ async fn setup(
         server_url,
         server_grpc_url,
         grpc_forward_port,
-        redap_url,
-        redap_forward_port,
     })
 }
 
@@ -306,20 +270,6 @@ async fn wait_listening(port: u16) -> anyhow::Result<()> {
     anyhow::bail!("forward on port {port} did not listen within 60 seconds")
 }
 
-async fn wait_redap_ready(sandbox: &str, port: u16) -> anyhow::Result<()> {
-    let check = format!("grep -qi ':{port:04X} ' /proc/net/tcp");
-    for _ in 0..240 {
-        if openshell::exec(sandbox, &["sh", "-c", &check])
-            .await
-            .is_ok_and(|o| o.success)
-        {
-            return Ok(());
-        }
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
-    anyhow::bail!("Rerun server in {sandbox} did not listen within two minutes")
-}
-
 fn progress(started: std::time::Instant, group: &str, outcomes: &[Outcome]) {
     for outcome in outcomes {
         let status = serde_json::to_value(outcome.status).unwrap_or_default();
@@ -341,7 +291,6 @@ async fn scenarios(settings: &Settings, _workdir: &Path, context: &RunContext) -
     };
     record("exposure", exposure(settings, context).await);
     record("outbound", outbound(settings, context).await);
-    record("redap", redap(settings, context).await);
     record("transfer", transfer(settings, context).await);
     record("dev", development(settings, context).await);
     record("gpu", vec![gpu(context).await]);
@@ -728,6 +677,22 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
         },
     );
 
+    const TOKEN_RULE: &str = "a static Go client, the TLS stack buildctl fetches a pull token with, trusts the TLS-inspecting proxy and receives Docker Hub's anonymous pull token through a REST endpoint that allows only GET /token, which refuses POST /token and GET /v2/ with 403";
+    outcomes.push(
+        match within(limit, openshell::exec_json(sandbox, &[policy::TOKEN_PROBE])).await {
+            Ok(r) => Outcome::check(
+                "outbound.docker_hub_token",
+                TOKEN_RULE,
+                num(&r, "/token/status") == Some(200)
+                    && r.pointer("/token/token") == Some(&json!(true))
+                    && num(&r, "/post/status") == Some(403)
+                    && num(&r, "/otherPath/status") == Some(403),
+                r,
+            ),
+            Err(e) => Outcome::error("outbound.docker_hub_token", TOKEN_RULE, e),
+        },
+    );
+
     for (id, port, rule) in [
         (
             "postgres.inspected",
@@ -771,58 +736,6 @@ async fn outbound(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
             },
         );
     }
-    outcomes
-}
-
-async fn redap(settings: &Settings, context: &RunContext) -> Vec<Outcome> {
-    let limit = deadline(settings);
-    let mut outcomes = Vec::new();
-    const FORWARD_RULE: &str =
-        "the Rerun 0.38.1 Catalog SDK lists and reads a dataset through a port forward";
-    let forward = format!("rerun+http://127.0.0.1:{}", context.redap_forward_port);
-    outcomes.push(
-        match within(limit, host::catalog_probe(&settings.image, &forward)).await {
-            Ok(r) => Outcome::check(
-                "redap.forward",
-                FORWARD_RULE,
-                r["ok"] == json!(true) && num(&r, "/rows") == Some(SAMPLE_ROWS),
-                r,
-            ),
-            Err(e) => Outcome::error("redap.forward", FORWARD_RULE, e),
-        },
-    );
-
-    const EXPOSURE_RULE: &str = "limit: native Redap clients cannot connect through exposure";
-    let exposed = format!("rerun+{}", context.redap_url);
-    outcomes.push(
-        match within(limit, host::catalog_probe(&settings.image, &exposed)).await {
-            Ok(r) => Outcome::limit(
-                "redap.native_exposure",
-                EXPOSURE_RULE,
-                r["ok"] != json!(true),
-                r,
-            ),
-            Err(e) => Outcome::error("redap.native_exposure", EXPOSURE_RULE, e),
-        },
-    );
-
-    const GRPC_WEB_RULE: &str = "Redap gRPC-Web, used by the WebViewer, answers through exposure";
-    outcomes.push(
-        match probes::grpc_web(
-            &context.redap_url,
-            "/rerun.cloud.v1alpha1.RerunCloudService/Version",
-        )
-        .await
-        {
-            Ok(r) => Outcome::check(
-                "redap.grpc_web",
-                GRPC_WEB_RULE,
-                num(&r, "/status") == Some(200) && r["grpcStatusOk"] == json!(true),
-                r,
-            ),
-            Err(e) => Outcome::error("redap.grpc_web", GRPC_WEB_RULE, e),
-        },
-    );
     outcomes
 }
 

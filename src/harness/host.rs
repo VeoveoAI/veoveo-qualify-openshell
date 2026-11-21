@@ -92,9 +92,9 @@ pub fn fresh_secret() -> anyhow::Result<String> {
     Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
-/// The official PostgreSQL 18.6 image.
+/// The official PostgreSQL 19.0 image.
 const POSTGRES_IMAGE: &str =
-    "postgres:18.6-trixie@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336";
+    "postgres:19.0-trixie@sha256:bb6e70add742cd868fb62cb3b2f67d1dd2bdd2b65a521e778420748753687c60";
 
 pub struct Postgres {
     pub container: String,
@@ -105,7 +105,7 @@ impl Postgres {
     pub const USER: &str = "probe";
     pub const DATABASE: &str = "probe";
 
-    /// Starts PostgreSQL 18.6 on a tmpfs data directory, published on two host ports that
+    /// Starts PostgreSQL 19.0 on a tmpfs data directory, published on two host ports that
     /// the policy treats as an endpoint without a protocol and as a `tcp` endpoint, and
     /// waits until it accepts connections. A container that never becomes ready is removed.
     pub async fn start(
@@ -189,26 +189,4 @@ impl Postgres {
     pub async fn stop(&self) {
         let _ = command_stdout("docker", &["rm", "-f", "-v", &self.container]).await;
     }
-}
-
-/// Runs the Rerun Catalog SDK probe from the probe image on the host network.
-pub async fn catalog_probe(image: &str, url: &str) -> anyhow::Result<serde_json::Value> {
-    let output = command_stdout(
-        "docker",
-        &[
-            "run",
-            "--rm",
-            "--network",
-            "host",
-            "-e",
-            "RERUN_ANALYTICS=false",
-            image,
-            "/usr/local/rerun/bin/python",
-            "/usr/local/share/probe/catalog_probe.py",
-            url,
-        ],
-    )
-    .await?;
-    let start = output.find('{').context("no catalog probe report")?;
-    serde_json::from_str(&output[start..]).context("decode catalog probe report")
 }

@@ -5,6 +5,8 @@ use std::{borrow::Cow, collections::BTreeMap, path::Path};
 
 pub const HOST: &str = "host.openshell.internal";
 const PROBE: &str = "/usr/local/bin/probe";
+/// The Go client that requests Docker Hub's pull token, as buildctl does in Hub's sandbox.
+pub const TOKEN_PROBE: &str = "/usr/local/bin/token-probe";
 
 #[derive(Serialize)]
 pub struct Policy {
@@ -278,6 +280,26 @@ pub fn client(ports: &HostPorts) -> Policy {
                 ..Default::default()
             }],
             binaries: probe(),
+        },
+    );
+    // Hub's `docker_hub_token` endpoint, for the token probe alone.
+    rules.insert(
+        "docker_hub_token",
+        Rule {
+            endpoints: vec![Endpoint {
+                host: "auth.docker.io".into(),
+                port: Some(443),
+                protocol: Some("rest"),
+                enforcement: Some("enforce"),
+                rules: vec![Allow {
+                    allow: RestMatch {
+                        method: "GET",
+                        path: "/token".into(),
+                    },
+                }],
+                ..Default::default()
+            }],
+            binaries: binaries(&[TOKEN_PROBE]),
         },
     );
     Policy {

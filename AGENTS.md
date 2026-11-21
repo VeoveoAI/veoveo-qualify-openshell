@@ -10,8 +10,9 @@ the README before changing a scenario.
   upstream and patched-build results separately; never hide a limitation in a probe.
 - Each scenario states the behavior Veoveo relies on as its rule, and its outcome keeps
   the measurements behind the verdict. Do not loosen a rule to make a release pass.
-- Test logic lives in Rust. The Rerun Catalog SDK probe is Python because that SDK is
-  the client under test. Do not add shell scripts or a task runner.
+- Test logic lives in Rust. The token probe is Go because Go's TLS stack, the one
+  `buildctl` fetches a registry token with, is the client under test. Do not add shell
+  scripts or a task runner.
 - Policies are typed in `src/harness/policy.rs` and written as JSON, which OpenShell
   reads as YAML.
 - Pin exact versions and image digests. When changing a pin, verify the latest stable

@@ -1,0 +1,895 @@
+{
+  "format": "https://veoveo.ai/formats/openshell-qualification",
+  "harnessVersion": "0.1.0",
+  "startedAt": "2026-11-21T17:07:54.772Z",
+  "durationMs": 317999,
+  "streamSeconds": 15,
+  "host": {
+    "id": "linux-x86_64",
+    "os": "linux",
+    "arch": "x86_64",
+    "dockerServer": "29.2.1",
+    "dockerKernel": "6.8.0-147-generic",
+    "openshell": "0.1.10-dev.76+g5f630f42c",
+    "computeDriver": "docker"
+  },
+  "outcomes": [
+    {
+      "id": "exposure.http",
+      "rule": "exposed HTTP answers health, MCP POST and form tokens, passes one Bearer header and refuses Basic",
+      "status": "pass",
+      "details": {
+        "base": "http://default--vv-qual-2d14-server.openshell.localhost:18080",
+        "basicAuth": {
+          "body": "Invalid service request",
+          "status": 400
+        },
+        "bearerAuth": {
+          "body": {
+            "authorization": {
+              "bearerLen": 18,
+              "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
+            }
+          },
+          "status": 200
+        },
+        "body8mib": {
+          "contentMatches": true,
+          "expectedBytes": 8388608,
+          "firstMismatch": null,
+          "mibPerS": 29.707555739144947,
+          "receivedBytes": 8388608,
+          "seconds": 0.269291761,
+          "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
+          "test": "big"
+        },
+        "formToken": {
+          "body": {
+            "authorization": "absent",
+            "fields": [
+              "client_assertion",
+              "grant_type"
+            ]
+          },
+          "status": 200
+        },
+        "healthz": {
+          "body": "ok",
+          "status": 200
+        },
+        "mcpPost": {
+          "body": {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": {
+              "method": "tools/list",
+              "serverMs": 1795280938819
+            }
+          },
+          "status": 200
+        },
+        "test": "http"
+      }
+    },
+    {
+      "id": "exposure.websocket",
+      "rule": "an exposed WebSocket upgrades and echoes every message",
+      "status": "pass",
+      "details": {
+        "echoed": 30,
+        "error": null,
+        "expected": 30,
+        "rttMs": {
+          "count": 30,
+          "max": 4,
+          "min": 1,
+          "p50": 3,
+          "p99": 4
+        },
+        "test": "ws",
+        "upgradeStatus": 101,
+        "url": "ws://default--vv-qual-2d14-server.openshell.localhost:18080/ws"
+      }
+    },
+    {
+      "id": "exposure.sse",
+      "rule": "ten exposed SSE streams deliver every event without buffering",
+      "status": "pass",
+      "details": {
+        "completeStreams": 10,
+        "errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "expectedPerStream": 30,
+        "firstStream": {
+          "error": null,
+          "latenessMs": {
+            "count": 30,
+            "max": 3,
+            "min": 0,
+            "p50": 1,
+            "p99": 3
+          },
+          "maxGapMs": 501,
+          "received": 30
+        },
+        "streams": 10,
+        "test": "sse",
+        "url": "http://default--vv-qual-2d14-server.openshell.localhost:18080/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 503,
+        "worstP99LatenessMs": 41
+      }
+    },
+    {
+      "id": "exposure.frames",
+      "rule": "an exposed length-framed binary stream delivers every frame without buffering",
+      "status": "pass",
+      "details": {
+        "error": null,
+        "expected": 150,
+        "frameBytes": 65536,
+        "latenessMs": {
+          "count": 150,
+          "max": 4,
+          "min": 1,
+          "p50": 3,
+          "p99": 4
+        },
+        "maxGapMs": 102,
+        "received": 150,
+        "test": "frames",
+        "url": "http://default--vv-qual-2d14-server.openshell.localhost:18080/frames?interval_ms=100&count=150&frame_bytes=65536"
+      }
+    },
+    {
+      "id": "exposure.burst",
+      "rule": "fifty simultaneous exposed SSE opens either stream completely or are refused with 502 at setup",
+      "status": "pass",
+      "details": {
+        "completeStreams": 50,
+        "refused": 0,
+        "report": {
+          "completeStreams": 50,
+          "errors": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "expectedPerStream": 10,
+          "firstStream": {
+            "error": null,
+            "latenessMs": {
+              "count": 10,
+              "max": 2,
+              "min": 0,
+              "p50": 1,
+              "p99": 2
+            },
+            "maxGapMs": 501,
+            "received": 10
+          },
+          "streams": 50,
+          "test": "sse",
+          "url": "http://default--vv-qual-2d14-server.openshell.localhost:18080/sse?interval_ms=500&count=10",
+          "worstMaxGapMs": 503,
+          "worstP99LatenessMs": 41
+        }
+      }
+    },
+    {
+      "id": "exposure.grpc_native",
+      "rule": "limit: exposure relays HTTP/1.1, so native gRPC through exposure fails",
+      "status": "limit_lifted",
+      "details": {
+        "chatError": null,
+        "chatRttMs": {
+          "count": 6,
+          "max": 25,
+          "min": 3,
+          "p50": 5,
+          "p99": 25
+        },
+        "expected": 6,
+        "test": "grpc",
+        "ticksError": null,
+        "ticksLatenessMs": {
+          "count": 6,
+          "max": 3,
+          "min": 2,
+          "p50": 2,
+          "p99": 3
+        },
+        "ticksMaxGapMs": 500,
+        "url": "http://default--vv-qual-2d14-server--grpc.openshell.localhost:18080"
+      }
+    },
+    {
+      "id": "forward.grpc",
+      "rule": "native gRPC through a port forward streams in both directions",
+      "status": "pass",
+      "details": {
+        "chatError": null,
+        "chatRttMs": {
+          "count": 30,
+          "max": 12,
+          "min": 3,
+          "p50": 5,
+          "p99": 12
+        },
+        "expected": 30,
+        "test": "grpc",
+        "ticksError": null,
+        "ticksLatenessMs": {
+          "count": 30,
+          "max": 3,
+          "min": 1,
+          "p50": 2,
+          "p99": 3
+        },
+        "ticksMaxGapMs": 502,
+        "url": "http://127.0.0.1:44489"
+      }
+    },
+    {
+      "id": "outbound.http",
+      "rule": "a sandbox reaches an uninspected HTTP endpoint on the gateway host",
+      "status": "pass",
+      "details": {
+        "base": "http://host.openshell.internal:40571",
+        "basicAuth": {
+          "body": {
+            "authorization": {
+              "otherScheme": "Basic"
+            }
+          },
+          "status": 200
+        },
+        "bearerAuth": {
+          "body": {
+            "authorization": {
+              "bearerLen": 18,
+              "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
+            }
+          },
+          "status": 200
+        },
+        "body8mib": {
+          "contentMatches": true,
+          "expectedBytes": 8388608,
+          "firstMismatch": null,
+          "mibPerS": 393.4408879410024,
+          "receivedBytes": 8388608,
+          "seconds": 0.020333423,
+          "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
+          "test": "big"
+        },
+        "formToken": {
+          "body": {
+            "authorization": "absent",
+            "fields": [
+              "client_assertion",
+              "grant_type"
+            ]
+          },
+          "status": 200
+        },
+        "healthz": {
+          "body": "ok",
+          "status": 200
+        },
+        "mcpPost": {
+          "body": {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": {
+              "method": "tools/list",
+              "serverMs": 1795281004759
+            }
+          },
+          "status": 200
+        },
+        "test": "http"
+      }
+    },
+    {
+      "id": "outbound.sse",
+      "rule": "ten outbound SSE streams deliver every event without buffering",
+      "status": "pass",
+      "details": {
+        "completeStreams": 10,
+        "errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "expectedPerStream": 30,
+        "firstStream": {
+          "error": null,
+          "latenessMs": {
+            "count": 30,
+            "max": 1,
+            "min": 0,
+            "p50": 0,
+            "p99": 1
+          },
+          "maxGapMs": 501,
+          "received": 30
+        },
+        "streams": 10,
+        "test": "sse",
+        "url": "http://host.openshell.internal:40571/sse?interval_ms=500&count=30",
+        "worstMaxGapMs": 501,
+        "worstP99LatenessMs": 1
+      }
+    },
+    {
+      "id": "outbound.frames",
+      "rule": "an outbound length-framed binary stream delivers every frame",
+      "status": "pass",
+      "details": {
+        "error": null,
+        "expected": 150,
+        "frameBytes": 65536,
+        "latenessMs": {
+          "count": 150,
+          "max": 2,
+          "min": 0,
+          "p50": 1,
+          "p99": 1
+        },
+        "maxGapMs": 101,
+        "received": 150,
+        "test": "frames",
+        "url": "http://host.openshell.internal:40571/frames?interval_ms=100&count=150&frame_bytes=65536"
+      }
+    },
+    {
+      "id": "outbound.websocket",
+      "rule": "an outbound WebSocket to an uninspected endpoint echoes every message",
+      "status": "pass",
+      "details": {
+        "echoed": 30,
+        "error": null,
+        "expected": 30,
+        "rttMs": {
+          "count": 30,
+          "max": 1,
+          "min": 0,
+          "p50": 1,
+          "p99": 1
+        },
+        "test": "ws",
+        "upgradeStatus": 101,
+        "url": "ws://host.openshell.internal:40571/ws"
+      }
+    },
+    {
+      "id": "outbound.grpc",
+      "rule": "outbound native gRPC streams in both directions on an uninspected endpoint",
+      "status": "pass",
+      "details": {
+        "chatError": null,
+        "chatRttMs": {
+          "count": 30,
+          "max": 2,
+          "min": 0,
+          "p50": 1,
+          "p99": 2
+        },
+        "expected": 30,
+        "test": "grpc",
+        "ticksError": null,
+        "ticksLatenessMs": {
+          "count": 30,
+          "max": 1,
+          "min": 0,
+          "p50": 0,
+          "p99": 1
+        },
+        "ticksMaxGapMs": 501,
+        "url": "http://host.openshell.internal:46679"
+      }
+    },
+    {
+      "id": "outbound.grpc_tcp",
+      "rule": "outbound native gRPC streams in both directions on a tcp endpoint",
+      "status": "pass",
+      "details": {
+        "chatError": null,
+        "chatRttMs": {
+          "count": 30,
+          "max": 1,
+          "min": 0,
+          "p50": 1,
+          "p99": 1
+        },
+        "expected": 30,
+        "test": "grpc",
+        "ticksError": null,
+        "ticksLatenessMs": {
+          "count": 30,
+          "max": 1,
+          "min": 0,
+          "p50": 0,
+          "p99": 1
+        },
+        "ticksMaxGapMs": 501,
+        "url": "http://host.openshell.internal:38691"
+      }
+    },
+    {
+      "id": "outbound.mcp_policy",
+      "rule": "MCP 2026-07-28 inspection allows tools/list, server/discover and an allowed tool, denies a denied tool and rejects a missing Mcp-Method header",
+      "status": "pass",
+      "details": {
+        "allowedTool": 200,
+        "deniedTool": 403,
+        "missingMethodHeader": 400,
+        "serverDiscover": 200,
+        "test": "mcp_policy",
+        "toolsList": 200
+      }
+    },
+    {
+      "id": "outbound.mcp_upgrade",
+      "rule": "limit: endpoints inspected as MCP refuse WebSocket upgrades with 403",
+      "status": "limit",
+      "details": {
+        "connectError": "HTTP error: 403 Forbidden",
+        "test": "ws",
+        "url": "ws://host.openshell.internal:35059/ws"
+      }
+    },
+    {
+      "id": "outbound.websocket_inspected",
+      "rule": "an endpoint inspected as websocket upgrades and echoes",
+      "status": "pass",
+      "details": {
+        "echoed": 30,
+        "error": null,
+        "expected": 30,
+        "rttMs": {
+          "count": 30,
+          "max": 2,
+          "min": 0,
+          "p50": 2,
+          "p99": 2
+        },
+        "test": "ws",
+        "upgradeStatus": 101,
+        "url": "ws://host.openshell.internal:41579/ws"
+      }
+    },
+    {
+      "id": "outbound.https_rustls",
+      "rule": "a rustls HTTPS client trusts the TLS-inspecting proxy",
+      "status": "pass",
+      "details": {
+        "outcome": {
+          "status": 200
+        },
+        "test": "https",
+        "url": "https://index.crates.io/config.json"
+      }
+    },
+    {
+      "id": "outbound.docker_hub_token",
+      "rule": "a static Go client, the TLS stack buildctl fetches a pull token with, trusts the TLS-inspecting proxy and receives Docker Hub's anonymous pull token through a REST endpoint that allows only GET /token, which refuses POST /token and GET /v2/ with 403",
+      "status": "pass",
+      "details": {
+        "otherPath": {
+          "ms": 1,
+          "status": 403,
+          "token": false
+        },
+        "post": {
+          "ms": 1,
+          "status": 403,
+          "token": false
+        },
+        "token": {
+          "ms": 231,
+          "status": 200,
+          "token": true
+        }
+      }
+    },
+    {
+      "id": "postgres.inspected",
+      "rule": "PostgreSQL answers queries, keeps a session advisory lock for the whole stream and notifies every write in order through LISTEN/NOTIFY on an endpoint without a protocol, which OpenShell inspects",
+      "status": "pass",
+      "details": {
+        "address": "host.openshell.internal:46169",
+        "advisoryLock": {
+          "grantedAfterRelease": true,
+          "heldThroughStream": true,
+          "refusedAfterStream": true,
+          "refusedBeforeStream": true,
+          "releasedByHolder": true,
+          "sameSession": true
+        },
+        "error": null,
+        "expected": 30,
+        "firstWriteError": null,
+        "maxGapMs": 501,
+        "notified": 30,
+        "notifyLatencyMs": {
+          "count": 30,
+          "max": 9,
+          "min": 1,
+          "p50": 2,
+          "p99": 9
+        },
+        "outOfOrder": 0,
+        "queryLatencyMs": {
+          "count": 30,
+          "max": 9,
+          "min": 1,
+          "p50": 2,
+          "p99": 9
+        },
+        "serverVersion": "19.0 (Debian 19.0-1.pgdg13+1)",
+        "test": "postgres",
+        "tls": false,
+        "writeErrors": 0
+      }
+    },
+    {
+      "id": "postgres.tcp",
+      "rule": "PostgreSQL answers queries, keeps a session advisory lock for the whole stream and notifies every write in order through LISTEN/NOTIFY on a tcp endpoint",
+      "status": "pass",
+      "details": {
+        "address": "host.openshell.internal:46357",
+        "advisoryLock": {
+          "grantedAfterRelease": true,
+          "heldThroughStream": true,
+          "refusedAfterStream": true,
+          "refusedBeforeStream": true,
+          "releasedByHolder": true,
+          "sameSession": true
+        },
+        "error": null,
+        "expected": 30,
+        "firstWriteError": null,
+        "maxGapMs": 501,
+        "notified": 30,
+        "notifyLatencyMs": {
+          "count": 30,
+          "max": 7,
+          "min": 1,
+          "p50": 2,
+          "p99": 7
+        },
+        "outOfOrder": 0,
+        "queryLatencyMs": {
+          "count": 30,
+          "max": 7,
+          "min": 1,
+          "p50": 1,
+          "p99": 7
+        },
+        "serverVersion": "19.0 (Debian 19.0-1.pgdg13+1)",
+        "test": "postgres",
+        "tls": false,
+        "writeErrors": 0
+      }
+    },
+    {
+      "id": "transfer.outbound",
+      "rule": "a sandbox downloads a large body from the gateway host byte-exact",
+      "status": "pass",
+      "details": {
+        "contentMatches": true,
+        "expectedBytes": 536870912,
+        "firstMismatch": null,
+        "mibPerS": 410.6286428179192,
+        "receivedBytes": 536870912,
+        "seconds": 1.246868695,
+        "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
+        "test": "big"
+      }
+    },
+    {
+      "id": "transfer.inbound",
+      "rule": "the host downloads a large body from an exposed sandbox service byte-exact",
+      "status": "pass",
+      "details": {
+        "contentMatches": true,
+        "expectedBytes": 536870912,
+        "firstMismatch": null,
+        "mibPerS": 65.58476176038174,
+        "receivedBytes": 536870912,
+        "seconds": 7.806691467,
+        "sha256": "c60cb63ec63c84da84c258015f0b706deeb33b703284ba3e8962421d25a2381c",
+        "test": "big"
+      }
+    },
+    {
+      "id": "dev.installable",
+      "rule": "inside a sandbox, rustup adds a target, cargo installs a crate, Git fetches from GitHub and a Cargo Git dependency builds",
+      "status": "pass",
+      "details": {
+        "cargoGitDependency": {
+          "ok": true,
+          "outputTail": "42\n",
+          "seconds": 0.853349966
+        },
+        "cargoInstall": {
+          "ok": true,
+          "outputTail": "/usr/local/cargo/bin/cargo-machete\n",
+          "seconds": 18.495259584
+        },
+        "gitFetch": {
+          "ok": true,
+          "outputTail": "438e07b2312476c9057f3f7630fde31d29b6d377\tHEAD\n",
+          "seconds": 0.803317545
+        },
+        "rustupTarget": {
+          "ok": true,
+          "outputTail": "info: downloading component rust-std\n",
+          "seconds": 2.106097003
+        }
+      }
+    },
+    {
+      "id": "dev.persistence",
+      "rule": "the workspace keeps a verified cache and Cargo output across stop, start and restart-policy replacement",
+      "status": "pass",
+      "details": {
+        "afterRestart": {
+          "ok": true,
+          "restartCount": 1
+        },
+        "afterStopStart": {
+          "error": null,
+          "ok": true
+        },
+        "prepare": {
+          "ok": true,
+          "outputTail": ""
+        }
+      }
+    },
+    {
+      "id": "gpu.device",
+      "rule": "a GPU sandbox sees the NVIDIA device",
+      "status": "pass",
+      "details": {
+        "output": "NVIDIA GeForce RTX 4090, 615.71.09, 24564 MiB"
+      }
+    },
+    {
+      "id": "git.provider_push",
+      "rule": "with a GitHub provider attached, a sandbox pushes to the one repository its policy allows, is refused on another and holds only a placeholder for the token",
+      "status": "pass",
+      "details": {
+        "branch": "qualify-2d14",
+        "branchDeleted": {
+          "ok": true,
+          "outputTail": ""
+        },
+        "credentialHelper": {
+          "ok": true,
+          "outputTail": ""
+        },
+        "deniedRepository": "VeoveoAI/veoveo-core",
+        "placeholderOnly": true,
+        "provider": "vv-github",
+        "pushAllowed": {
+          "ok": true,
+          "outputTail": "remote: \nremote: Create a pull request for 'qualify-2d14' on GitHub by visiting:        \nremote:      https://github.com/VeoveoAI/veoveo-qualify-openshell/pull/new/qualify-2d14        \nremote: \n"
+        },
+        "pushRefused": {
+          "ok": true,
+          "outputTail": "error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403\nsend-pack: unexpected disconnect while reading sideband packet\nfatal: the remote end hung up unexpectedly\n"
+        },
+        "pushRepository": "VeoveoAI/veoveo-qualify-openshell"
+      }
+    },
+    {
+      "id": "peer.exposure",
+      "rule": "limit: a sandbox cannot reach another sandbox's exposed service, because the exposure name resolves to its own loopback and requests to host.openshell.internal must carry that authority",
+      "status": "limit",
+      "details": {
+        "direct": {
+          "healthz": {
+            "error": "error sending request for url (http://default--vv-qual-2d14-peer.openshell.localhost:18080/healthz)"
+          },
+          "mcpPost": {
+            "error": "error sending request for url (http://default--vv-qual-2d14-peer.openshell.localhost:18080/mcp)"
+          }
+        },
+        "exposureUrl": "http://default--vv-qual-2d14-peer.openshell.localhost:18080",
+        "gatewayListenerWithPeerAuthority": {
+          "status": "403"
+        }
+      }
+    },
+    {
+      "id": "peer.forward",
+      "rule": "a sandbox reaches another sandbox's service through a port forward on the gateway host, with MCP POST, bearer passthrough and SSE streams intact",
+      "status": "pass",
+      "details": {
+        "base": "http://host.openshell.internal:39283",
+        "http": {
+          "base": "http://host.openshell.internal:39283",
+          "basicAuth": {
+            "body": {
+              "authorization": {
+                "otherScheme": "Basic"
+              }
+            },
+            "status": 200
+          },
+          "bearerAuth": {
+            "body": {
+              "authorization": {
+                "bearerLen": 18,
+                "bearerSha256": "dd67bc06bfafd3ffb9e488a5abb91de123b650be0cb7e71aa25b81ea295314fe"
+              }
+            },
+            "status": 200
+          },
+          "body8mib": {
+            "contentMatches": true,
+            "expectedBytes": 8388608,
+            "firstMismatch": null,
+            "mibPerS": 26.307406151411456,
+            "receivedBytes": 8388608,
+            "seconds": 0.304096875,
+            "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a",
+            "test": "big"
+          },
+          "formToken": {
+            "body": {
+              "authorization": "absent",
+              "fields": [
+                "client_assertion",
+                "grant_type"
+              ]
+            },
+            "status": 200
+          },
+          "healthz": {
+            "body": "ok",
+            "status": 200
+          },
+          "mcpPost": {
+            "body": {
+              "id": 1,
+              "jsonrpc": "2.0",
+              "result": {
+                "method": "tools/list",
+                "serverMs": 1795281174057
+              }
+            },
+            "status": 200
+          },
+          "test": "http"
+        },
+        "sse": {
+          "completeStreams": 3,
+          "errors": [
+            null,
+            null,
+            null
+          ],
+          "expectedPerStream": 30,
+          "firstStream": {
+            "error": null,
+            "latenessMs": {
+              "count": 30,
+              "max": 4,
+              "min": 1,
+              "p50": 3,
+              "p99": 4
+            },
+            "maxGapMs": 502,
+            "received": 30
+          },
+          "streams": 3,
+          "test": "sse",
+          "url": "http://host.openshell.internal:39283/sse?interval_ms=500&count=30",
+          "worstMaxGapMs": 502,
+          "worstP99LatenessMs": 4
+        }
+      }
+    },
+    {
+      "id": "sandbox.loopback_close",
+      "rule": "limit: inside a sandbox a closed loopback listener keeps completing TCP handshakes, while a port that never listened refuses",
+      "status": "limit_lifted",
+      "details": {
+        "closedListener": "ConnectionRefusedError",
+        "neverListened": "ConnectionRefusedError"
+      }
+    },
+    {
+      "id": "provider.bound_secret",
+      "rule": "an endpointless provider's secret reaches only the endpoint a sandbox policy binds it to: the sandbox holds a placeholder, the bound endpoint receives the value and another allowed endpoint is refused",
+      "status": "pass",
+      "details": {
+        "boundEndpointReceivedSecret": true,
+        "boundResponse": {
+          "authorization": {
+            "bearerLen": 48,
+            "bearerSha256": "eaae9eddda4259b0791f8b42804c758ed4ae87d1f36286641277f55c90946652"
+          }
+        },
+        "placeholderOnly": true,
+        "unboundEndpointResponse": "{\"error\":\"credential_endpoint_mismatch\",\"message\":\"Credential is not authorized for this request endpoint\"} status=403"
+      }
+    },
+    {
+      "id": "lifecycle.fast_failure",
+      "rule": "a main process that exits at once under the on-failure restart policy keeps restarting or reports Error, and the sandbox deletes",
+      "status": "skip",
+      "details": {
+        "reason": "run with --lifecycle; on OpenShell 0.1.3 this scenario can leave a record that no API deletes"
+      }
+    }
+  ]
+}
